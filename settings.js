@@ -4,16 +4,16 @@ const settings = {
     "port": 55916,
     "auth": "offline", // or "microsoft"
 
-    // the mindserver manages all agents and hosts the UI
-    "host_mindserver": true, // if true, the mindserver will be hosted on this machine. otherwise, specify a public IP address
-    "mindserver_host": "localhost",
-    "mindserver_port": 8080,
+    // the monitor_server manages all agents and hosts the UI
+    "host_monitor_server": true, // if true, the monitor_server will be hosted on this machine. otherwise, specify a public IP address
+    "monitor_server_host": "localhost",
+    "monitor_server_port": 8080,
     "proxyserver_port": 8081,
     
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // survival.json, creative.json, god_mode.json
     "profiles": [
-        "./lucy.json",
+        // "./lucy.json",
         "./max.json",
         // if you are using more than 1 profile, then 
         // - you can use /msg or @botname in order to talk to each bot indivually
@@ -43,8 +43,8 @@ const settings = {
 if (process.env.MINECRAFT_PORT) {
     settings.port = process.env.MINECRAFT_PORT;
 }
-if (process.env.MINDSERVER_PORT) {
-    settings.mindserver_port = process.env.MINDSERVER_PORT;
+if (process.env.MONITOR_SERVER_PORT) {
+    settings.monitor_server_port = process.env.MONITOR_SERVER_PORT;
 }
 if (process.env.PROFILES && JSON.parse(process.env.PROFILES).length > 0) {
     settings.profiles = JSON.parse(process.env.PROFILES);

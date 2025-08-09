@@ -184,6 +184,8 @@ export class Prompter {
             model = new ReplicateAPI(profile.model.replace('replicate/', ''), profile.url, profile.params);
         else if (profile.api === 'ollama')
             model = new Local(profile.model.replace('ollama/', ''), profile.url, profile.params);
+        else if (profile.api === 'ollama-agent')
+            model = new LocalAgent(profile.model.replace('ollama/', ''), profile.url, profile.params);
         else if (profile.api === 'mistral')
             model = new Mistral(profile.model, profile.url, profile.params);
         else if (profile.api === 'groq')

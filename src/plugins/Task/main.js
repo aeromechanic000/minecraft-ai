@@ -116,7 +116,7 @@ export class PluginInstance {
             },
             {
                 name: '!newTask',
-                description: 'start a new task with the given name and requirements',
+                description: 'Start a new task with the given name and requirements',
                 params: {
                     'task_name': { type: 'string', description: 'name of the task to perform, which should be one of the options ["cooking", "crafting", "construction"].' },
                     'requirement': { type: 'string', description: 'a string that describes the requirement of the task in natural language.' },

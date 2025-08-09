@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 import settings from '../../settings.js';
 
-// Singleton mindserver proxy for the main process
+// Singleton monitor server proxy for the main process
 class MainProxy {
     constructor() {
         if (MainProxy.instance) {
@@ -17,7 +17,7 @@ class MainProxy {
     connect() {
         if (this.connected) return;
 
-        this.socket = io(`http://${settings.mindserver_host}:${settings.mindserver_port}`);
+        this.socket = io(`http://${settings.monitor_server_host}:${settings.monitor_server_port}`);
         this.connected = true;
 
         this.socket.on('stop-agent', (agentName) => {

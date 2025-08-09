@@ -18,15 +18,15 @@ class AgentServerProxy {
         
         this.agent = agent;
 
-        this.socket = io(`http://${settings.mindserver_host}:${settings.mindserver_port}`);
+        this.socket = io(`http://${settings.monitor_server_host}:${settings.monitor_server_port}`);
         this.connected = true;
 
         this.socket.on('connect', () => {
-            console.log('Connected to MindServer');
+            console.log('Connected to MonitorServer');
         });
 
         this.socket.on('disconnect', () => {
-            console.log('Disconnected from MindServer');
+            console.log('Disconnected from MonitorServer');
             this.connected = false;
         });
 

@@ -51,7 +51,7 @@ export const queryList = [
             let action = agent.actions.currentActionLabel;
             if (agent.isIdle())
                 action = 'Idle';
-            res += `\- Current Action: ${action}`;
+            res += `\n- Current Action: ${action}`;
 
 
             let players = world.getNearbyPlayerNames(bot);
