@@ -83,7 +83,12 @@ export function isHuntable(mob) {
 
 export function isHostile(mob) {
     if (!mob || !mob.name) return false;
-    return  (mob.type === 'mob' || mob.type === 'hostile') && mob.name !== 'iron_golem' && mob.name !== 'snow_golem';
+    return (
+        (mob.type === "mob" || mob.type === "hostile") &&
+        mob.name !== "iron_golem" &&
+        mob.name !== "snow_golem" &&
+        mob.name !== "item" // workaround for #2, item.type can be "mob" in some versions
+    );
 }
 
 // blocks that don't work with collectBlock, need to be manually collected
