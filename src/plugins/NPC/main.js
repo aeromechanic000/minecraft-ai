@@ -114,7 +114,7 @@ export class PluginInstance {
         user_message = await this.agent.prompter.replaceStrings(user_message, messages, null, null, last_goals);
         let user_messages = [{role: 'user', content: user_message}];
 
-        let res = await this.agent.prompter.chat_model.sendRequest(user_messages, system_message);
+        let res = await this.agent.prompter.enhancer.sendRequest(this.agent.prompter.chat_model, user_messages, system_message);
 
         let goal = null;
         try {

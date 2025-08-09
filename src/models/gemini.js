@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { toSinglePrompt, strictFormat } from '../utils/text.js';
 import { getKey } from '../utils/keys.js';
 
@@ -30,7 +30,7 @@ export class Gemini {
             },
         ];
 
-        this.genAI = new GoogleGenerativeAI(getKey('GEMINI_API_KEY'));
+        this.genAI = new GoogleGenAI(getKey('GEMINI_API_KEY'));
     }
 
     async sendRequest(turns, systemMessage) {

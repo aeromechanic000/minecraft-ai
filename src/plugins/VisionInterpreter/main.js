@@ -129,6 +129,6 @@ export class PluginInstance {
         let prompt = "You are a Minecraft bot named $NAME that has been given a screenshot of your current view. Analyze and summarize the view; describe terrain, blocks, entities, structures, and notable features. Focus on details relevant to the conversation. Note: the sky is always blue regardless of weather or time, dropped items are small pink cubes, and blocks below y=0 do not render. Be extremely concise and correct, respond only with your analysis, not conversationally. $STATS";
 
         prompt = await this.agent.prompter.replaceStrings(prompt, messages, null, null, null);
-        return await this.agent.prompter.vision_model.sendVisionRequest(messages, prompt, imageBuffer);
+        return await this.agent.prompter.enhancer.sendVisionRequest(this.agent.prompter.vision_model, messages, prompt, imageBuffer);
     }
 } 

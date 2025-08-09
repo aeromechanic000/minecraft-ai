@@ -15,7 +15,6 @@ export class PluginInstance {
 
     init() {
         if (this.agent.prompter.profile.viewer) {
-            console.log("******")
             addBrowserViewer(this.agent.bot, this.agent.count_id)
         }
     }
