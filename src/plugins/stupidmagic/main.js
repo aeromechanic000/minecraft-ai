@@ -137,9 +137,9 @@ extractDataBlock(str) {
                         
                         }
                         if(step["name"]==='toss'){
-                            //console.log('fuck1')
+                            
                             await agent.bot.toss(agent.bot.heldItem.type, null, agent.bot.heldItem.count);
-                            //console.log('fuck2')
+                            
                         }
                         if(step["name"] ==="nod"){
                             agent.bot.look(20, 0, false);
@@ -153,7 +153,7 @@ extractDataBlock(str) {
                             await new Promise(resolve => setTimeout(resolve, step["duration"]));
                         }   
                         if(step["name"]==="magictrick"){
-                            agent.plugin.plugins["stupidmagic"].playAudioFile('./src/plugins/stupidmagic/moshujiqiao.MP3');
+                            agent.plugin.plugins["stupidmagic"].playAudioFile('./src/plugins/stupidmagic/');
                             agent.bot.setControlState('jump', true);
                             agent.bot.swingArm('right');
                             agent.bot.swingArm('left');
