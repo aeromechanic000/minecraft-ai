@@ -122,6 +122,7 @@ export class PluginInstance {
                             )
                         }
                     }
+                    agent.bot.chat("/weather rain");
                 }
             }]
     }
