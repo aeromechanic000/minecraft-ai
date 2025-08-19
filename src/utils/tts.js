@@ -134,7 +134,7 @@ const commandExists = command => {
 // Example of usage 
 const ttsExample = async () => {
   try {
-    const text = "Hello, welcome to use Mindcraft Generative Agents.";
+    const text = "Hello, welcome to use Minecraft AI Agents.";
     
     const filePath = await textToSpeech(text, {
       appid: 'YOUR_APP_ID', 

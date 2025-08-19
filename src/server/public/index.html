@@ -1,8 +1,8 @@
-<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;"><meta http-equiv="x-dns-prefetch-control" content="off"><meta name="x-poe-datastore-behavior" content="disabled"><meta name="x-poe-allow-downloads" content="true"><script src="https://puc.poecdn.net/standard.25f6d5ebb7608dc2f276.js"></script>
+<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com https://cdn.socket.io; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;"><meta http-equiv="x-dns-prefetch-control" content="off"><meta name="x-poe-datastore-behavior" content="disabled"><meta name="x-poe-allow-downloads" content="true"><script src="https://puc.poecdn.net/standard.25f6d5ebb7608dc2f276.js"></script>
     <meta charset="utf-8">
     <title>Minecraft AI</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-  <script src="https://puc.poecdn.net/disableWebRTC.9710cebe07429a9e8e06.js"></script><script src="https://puc.poecdn.net/tw.b9024aecac666455e183.js"></script><script src="https://puc.poecdn.net/deps.faccd16000d314dc16d5.js"></script><script src="https://puc.poecdn.net/exports.b0f0f482cdeb5302b0b9.js"></script><script src="https://puc.poecdn.net/renderer.75c73ae6b4235f62945a.js"></script><script>Object.defineProperty(exports, "__esModule", {value: true}); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; } function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }var _react = require('react'); var _react2 = _interopRequireDefault(_react);
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script><script src="https://puc.poecdn.net/disableWebRTC.9710cebe07429a9e8e06.js"></script><script src="https://puc.poecdn.net/tw.b9024aecac666455e183.js"></script><script src="https://puc.poecdn.net/deps.faccd16000d314dc16d5.js"></script><script src="https://puc.poecdn.net/exports.b0f0f482cdeb5302b0b9.js"></script><script src="https://puc.poecdn.net/renderer.75c73ae6b4235f62945a.js"></script><script>Object.defineProperty(exports, "__esModule", {value: true}); function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; } function _optionalChain(ops) { let lastAccessLHS = undefined; let value = ops[0]; let i = 1; while (i < ops.length) { const op = ops[i]; const fn = ops[i + 1]; i += 2; if ((op === 'optionalAccess' || op === 'optionalCall') && value == null) { return undefined; } if (op === 'access' || op === 'optionalAccess') { lastAccessLHS = value; value = fn(value); } else if (op === 'call' || op === 'optionalCall') { value = fn((...args) => value.call(lastAccessLHS, ...args)); lastAccessLHS = undefined; } } return value; }var _react = require('react'); var _react2 = _interopRequireDefault(_react);
 
 
 var _lucidereact = require('lucide-react');
@@ -10,7 +10,15 @@ var _lucidereact = require('lucide-react');
 const MinecraftAIManager = () => {
   // Tab management
   const [activeTab, setActiveTab] = _react.useState.call(void 0, 'monitor');
-  
+
+  // Add these new state variables
+  const [socketConnected, setSocketConnected] = _react.useState.call(void 0, false);
+  const [sttKeys, setSttKeys] = _react.useState.call(void 0, {});
+  const [sttPorts, setSttPorts] = _react.useState.call(void 0, {});
+
+  // Add socket ref
+  const socketRef = _react.useRef.call(void 0, null);
+
   // API Connection State
   const [apiConnected, setApiConnected] = _react.useState.call(void 0, false);
   const [lastApiCheck, setLastApiCheck] = _react.useState.call(void 0, null);
@@ -46,18 +54,24 @@ const MinecraftAIManager = () => {
     tasksCompleted: '-'
   });
 
+  // Add this ref near your other state/refs
+  const messagesEndRef = _react.useRef.call(void 0, null);
+  
   // Refs for audio handling
   const mediaRecorderRef = _react.useRef.call(void 0, null);
   const audioStreamRef = _react.useRef.call(void 0, null);
 
   // API Configuration
-  const API_BASE_URL = 'http://localhost:3001/api'; // Backend API URL
+  const MONITOR_SERVER_URL = 'http://localhost:8080'; // Backend API URL
+  const API_BASE_URL = `${MONITOR_SERVER_URL}/api`; // Backend API URL
   
   // API Request Functions
   const apiRequest = async (endpoint, options = {}) => {
     const startTime = Date.now();
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const url = `${API_BASE_URL}${endpoint}`;
+      console.log("API Request with url:", url);
+      const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers
@@ -84,57 +98,29 @@ const MinecraftAIManager = () => {
   };
 
   // Agent Management API Functions
-  const getAgentsList = async () => {
+  
+  const getAgentStatus = async (agentName) => {
     try {
-      const response = await apiRequest('/agents');
-      return response.success ? response.data.agents : [];
-    } catch (error) {
-      console.error('Failed to fetch agents list:', error);
-      return [];
-    }
-  };
-
-  const getAgentStatus = async (agentId) => {
-    try {
-      const response = await apiRequest(`/agents/${agentId}/status`);
+      const response = await apiRequest(`/agents/${agentName}/status`, {
+        method: 'GET',
+      });
       return response.success ? response.data : null;
     } catch (error) {
-      console.error(`Failed to fetch status for agent ${agentId}:`, error);
-      return null;
-    }
-  };
-
-  const sendAgentCommand = async (agentId, command) => {
-    try {
-      const response = await apiRequest(`/agents/${agentId}/command`, {
-        method: 'POST',
-        body: JSON.stringify({ command })
-      });
-      return response;
-    } catch (error) {
-      console.error(`Failed to send command to agent ${agentId}:`, error);
+      console.error(`Failed to get status of agent ${agentName}:`, error);
       throw error;
     }
   };
 
-  const getAgentMessages = async (agentId) => {
+  const sendAgentCommand = async (agentName, command) => {
     try {
-      const response = await apiRequest(`/agents/${agentId}/messages`);
-      return response.success ? response.data.messages : [];
-    } catch (error) {
-      console.error(`Failed to fetch messages for agent ${agentId}:`, error);
-      return [];
-    }
-  };
-
-  // System Status API Functions
-  const getSystemStatus = async () => {
-    try {
-      const response = await apiRequest('/system/status');
+      const response = await apiRequest(`/agents/${agentName}/command`, {
+        method: 'POST',
+        body: JSON.stringify({ command })
+      });
       return response.success ? response.data : null;
     } catch (error) {
-      console.error('Failed to fetch system status:', error);
-      return null;
+      console.error(`Failed to send command to agent ${agentName}:`, error);
+      throw error;
     }
   };
 
@@ -148,75 +134,31 @@ const MinecraftAIManager = () => {
     }
   };
 
-  // Logs and Monitoring API Functions
-  const getActionLogs = async (limit = 50) => {
-    try {
-      const response = await apiRequest(`/logs/actions?limit=${limit}`);
-      return response.success ? response.data.logs : [];
-    } catch (error) {
-      console.error('Failed to fetch action logs:', error);
-      return [];
-    }
-  };
-
-  const getAgentStatusLogs = async (limit = 50) => {
-    try {
-      const response = await apiRequest(`/logs/agent-status?limit=${limit}`);
-      return response.success ? response.data.logs : [];
-    } catch (error) {
-      console.error('Failed to fetch agent status logs:', error);
-      return [];
-    }
-  };
-
   // Real-time Updates
+
   const refreshAllData = async () => {
     setIsRefreshingStatus(true);
-    try {
-      // Fetch system status
-      const systemStatus = await getSystemStatus();
-      if (systemStatus) {
-        setGlobalStats({
-          totalAgents: systemStatus.totalAgents || '-',
-          activeAgents: systemStatus.activeAgents || '-',
-          serverStatus: systemStatus.serverStatus || 'Unknown',
-          uptime: systemStatus.uptime || '-',
-          memoryUsage: systemStatus.memoryUsage || '-',
-          tasksCompleted: systemStatus.tasksCompleted || '-'
-        });
-      }
-
-      // Fetch agents list - CRITICAL: Always fetch from API
-      const agentsList = await getAgentsList();
-      setAgents(agentsList); // Set empty array if API fails, will be handled in render
-
-      // Fetch logs
-      const actionLogs = await getActionLogs();
-      if (actionLogs.length > 0) {
-        setActionLog(actionLogs);
-      }
-
-      const statusLogs = await getAgentStatusLogs();
-      if (statusLogs.length > 0) {
-        setAgentStatusLogs(statusLogs);
-      }
-
-      // Update selected agent if exists
-      if (selectedAgent) {
-        const updatedAgentStatus = await getAgentStatus(selectedAgent.id);
-        if (updatedAgentStatus) {
-          setSelectedAgent(prev => ({ ...prev, ...updatedAgentStatus }));
+    
+    // Request data via WebSocket instead of REST API
+    if (socketRef.current && socketConnected) {
+        socketRef.current.emit('request-system-status');
+        socketRef.current.emit('request-agents-data');
+        socketRef.current.emit('request-action-logs', 50);
+        socketRef.current.emit('request-agent-status-logs', 50);
+        
+        if (selectedAgent) {
+            socketRef.current.emit('request-agent-messages', selectedAgent.id);
         }
-
-        const agentMessages = await getAgentMessages(selectedAgent.id);
-        setAgentMessages(agentMessages);
-      }
-    } catch (error) {
-      console.error('Failed to refresh data:', error);
-    } finally {
-      setIsRefreshingStatus(false);
     }
+    
+    setIsRefreshingStatus(false);
   };
+
+  _react.useEffect.call(void 0, () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [agentMessages]);
 
   // Initialize data
   _react.useEffect.call(void 0, () => {
@@ -229,6 +171,14 @@ const MinecraftAIManager = () => {
         
         // Initialize monitor chat based on API connection status
         if (apiConnected) {
+          setGlobalStats({
+            totalAgents: '-',
+            activeAgents: '-',
+            serverStatus: 'Connected',
+            uptime: '-',
+            memoryUsage: '-',
+            tasksCompleted: '-'
+          });
           setMonitorChat([
             { 
               id: 1, 
@@ -243,7 +193,7 @@ const MinecraftAIManager = () => {
           setGlobalStats({
             totalAgents: '-',
             activeAgents: '-',
-            serverStatus: 'API Disconnected',
+            serverStatus: 'Disconnected',
             uptime: '-',
             memoryUsage: '-',
             tasksCompleted: '-'
@@ -291,7 +241,7 @@ const MinecraftAIManager = () => {
     if (selectedAgent && apiConnected) {
       const fetchAgentData = async () => {
         try {
-          const messages = await getAgentMessages(selectedAgent.id);
+          const messages = await getAgentMessages(selectedAgent.name);
           setAgentMessages(messages);
         } catch (error) {
           console.error('Failed to fetch agent data:', error);
@@ -303,6 +253,66 @@ const MinecraftAIManager = () => {
       setAgentMessages([]);
     }
   }, [selectedAgent, apiConnected]);
+
+  // WebSocket connection and event handlers
+  _react.useEffect.call(void 0, () => {
+    // Initialize socket connection
+    socketRef.current = io(MONITOR_SERVER_URL);
+    
+    // Connection events
+    socketRef.current.on('connect', () => {
+      console.log('WebSocket connected');
+      setSocketConnected(true);
+    });
+    
+    socketRef.current.on('disconnect', () => {
+      console.log('WebSocket disconnected');
+      setSocketConnected(false);
+    });
+    
+    // Agent updates from WebSocket
+    socketRef.current.on('agents-update', (agentsData) => {
+      console.log('WebSocket agents update:', agentsData);
+      setAgents(agentsData);
+    });
+    
+    // Keys update
+    socketRef.current.on('keys-update', (keys) => {
+      console.log('Keys update:', keys);
+      setSttKeys(keys);
+    });
+    
+    socketRef.current.on('system-status', (statusData) => {
+        console.log('Received system status:', statusData);
+        setGlobalStats({
+            totalAgents: statusData.totalAgents || '-',
+            activeAgents: statusData.activeAgents || '-',
+            serverStatus: statusData.serverStatus || 'Unknown',
+            uptime: statusData.uptime || '-',
+            memoryUsage: statusData.memoryUsage || '-',
+            tasksCompleted: statusData.tasksCompleted || '-'
+        });
+    });
+
+    socketRef.current.on('action-logs', (logs) => {
+        setActionLog(logs);
+    });
+
+    socketRef.current.on('agent-status-logs', (logs) => {
+        setAgentStatusLogs(logs);
+    });
+
+    socketRef.current.on('new-agent-status-log', (logEntry) => {
+        setAgentStatusLogs(prev => [logEntry, ...prev.slice(0, 49)]);
+    });
+    
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
 
   // Clear selected agent if it no longer exists in the agents list
   _react.useEffect.call(void 0, () => {
@@ -356,6 +366,22 @@ const MinecraftAIManager = () => {
     setVoiceStatus('Voice detection stopped');
   };
 
+  const updateAndSetSelectedAgent = async (agent) => {
+    const update = await getAgentStatus(agent.name);
+    const agentUpdate = { ...agent, ...update };
+    console.log("Agent Update:", agentUpdate);
+    if (agentUpdate) {
+      setAgents(prevAgents => 
+        prevAgents.map(a => 
+          a.name === agent.name ? agentUpdate : a
+        )
+      );
+      setSelectedAgent(agentUpdate);
+    } else {
+      setSelectedAgent(agent);
+    }
+  };
+
   const processVoiceData = (audioData) => {
     setTimeout(() => {
       const transcript = "Show me agent status";
@@ -402,6 +428,7 @@ Current system status:
 - Memory: ${globalStats.memoryUsage}
 - Uptime: ${globalStats.uptime}
 - API Status: ${apiConnected ? 'Connected' : 'Disconnected'}
+- Socket Status: ${socketConnected ? 'Connected' : 'Disconnected'}
 
 Available agents:
 ${agents.length > 0 ? agents.map(a => `- ${a.name}: ${a.status} at (${_optionalChain([a, 'access', _ => _.coordinates, 'optionalAccess', _2 => _2.x]) || '-'}, ${_optionalChain([a, 'access', _3 => _3.coordinates, 'optionalAccess', _4 => _4.y]) || '-'}, ${_optionalChain([a, 'access', _5 => _5.coordinates, 'optionalAccess', _6 => _6.z]) || '-'}) in ${a.biome || '-'}, Health: ${a.health || '-'}/${a.maxHealth || '-'}, Task: ${a.task || '-'}`).join('\n') : 'No agents available (API disconnected)'}
@@ -502,7 +529,18 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
     return descriptions[name] || `Executed ${name}`;
   };
 
-  // Enhanced agent command functions
+  const getAgentMessages = async (agentName) => {
+    try {
+      const response = await apiRequest(`/agents/${agentName}/messages`, {
+        method: 'GET',
+      });
+      return response.success ? response.data : null;
+    } catch (error) {
+      console.error(`Failed to get messages of agent ${agentName}:`, error);
+      throw error;
+    }
+  }
+
   const handleSendAgentCommand = async () => {
     if (!agentCommand.trim() || !selectedAgent) return;
     
@@ -511,10 +549,10 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
     try {
       if (apiConnected) {
         // Send command via API
-        await sendAgentCommand(selectedAgent.id, agentCommand);
+        const res = await sendAgentCommand(selectedAgent.name, agentCommand);
         
         // Refresh agent messages
-        const messages = await getAgentMessages(selectedAgent.id);
+        const messages = await getAgentMessages(selectedAgent.name);
         setAgentMessages(messages);
       } else {
         // Fallback behavior when API is unavailable
@@ -632,6 +670,37 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
     );
   }
 
+  // WebSocket-based agent control functions
+  const startAgent = (agentName) => {
+    if (socketRef.current) {
+      socketRef.current.emit('start-agent', agentName);
+    }
+  };
+
+  const stopAgent = (agentName) => {
+    if (socketRef.current) {
+      socketRef.current.emit('stop-agent', agentName);
+    }
+  };
+
+  const restartAgent = (agentName) => {
+    if (socketRef.current) {
+      socketRef.current.emit('restart-agent', agentName);
+    }
+  };
+
+  const killAllAgents = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('stop-all-agents');
+    }
+  };
+
+  const shutdown = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('shutdown');
+    }
+  };
+
   return (
     _react2.default.createElement('div', { className: "h-screen bg-gray-900 text-gray-100 flex flex-col overflow-hidden"     ,}
       , _react2.default.createElement('style', { jsx: true,}, `
@@ -735,30 +804,19 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
 
           /* Status display with SVG icons and update time */
           , _react2.default.createElement('div', { className: `flex items-center gap-3 px-4 py-2 rounded-lg border ${
-            apiConnected 
+            socketConnected 
               ? 'text-green-400 bg-green-900/20 border-green-600' 
               : 'text-red-400 bg-red-900/20 border-red-600'
           }`,}
-            , apiConnected ? _react2.default.createElement(_lucidereact.Wifi, { className: "w-4 h-4" ,} ) : _react2.default.createElement(_lucidereact.WifiOff, { className: "w-4 h-4" ,} )
+            , socketConnected ? _react2.default.createElement(_lucidereact.Wifi, { className: "w-4 h-4" ,} ) : _react2.default.createElement(_lucidereact.WifiOff, { className: "w-4 h-4" ,} )
             , _react2.default.createElement('span', { className: "font-medium",}
               , globalStats.serverStatus
             )
+
             /* Show additional info when connected and meaningful */
-            , apiConnected && apiLatency && (
-              _react2.default.createElement('span', { className: "text-sm opacity-75" ,}, "("
-                , apiLatency, "ms)"
-              )
-            )
-            , apiConnected && globalStats.uptime !== '-' && (
-              _react2.default.createElement('span', { className: "text-sm opacity-75" ,}, "Up: "
+            , socketConnected && globalStats.uptime !== '-' && (
+              _react2.default.createElement('span', { className: "text-sm opacity-75" ,}, "Update - "
                  , globalStats.uptime
-              )
-            )
-            /* Always show last update time */
-            , lastApiCheck && (
-              _react2.default.createElement('span', { className: "text-xs opacity-60 flex items-center gap-1"    ,}
-                , _react2.default.createElement(_lucidereact.Clock, { className: "w-3 h-3" ,} )
-                , lastApiCheck
               )
             )
           )
@@ -959,7 +1017,7 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
                     , agents.map(agent => (
                       _react2.default.createElement('div', {
                         key: agent.id,
-                        onClick: () => setSelectedAgent(agent),
+                        onClick: () => updateAndSetSelectedAgent(agent),
                         className: `p-3 rounded-lg cursor-pointer smooth-transition custom-button border ${
                           _optionalChain([selectedAgent, 'optionalAccess', _7 => _7.id]) === agent.id
                             ? 'bg-blue-600 border-blue-500 shadow-lg'
@@ -973,6 +1031,31 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
                             agent.status === 'offline' ? 'bg-red-400' : 'bg-gray-400'
                           }`,} )
                         )
+
+                        // Add control buttons
+                        , _react2.default.createElement('div', { 
+                          className: "flex gap-1 mb-2",
+                          onClick: (e) => e.stopPropagation()
+                        },
+                          agent.status === 'online' ? (
+                            _react2.default.createElement(_react2.default.Fragment, null,
+                              _react2.default.createElement('button', {
+                                onClick: () => stopAgent(agent.name),
+                                className: "px-2 py-1 text-xs bg-red-600 hover:bg-red-700 rounded smooth-transition custom-button"
+                              }, "Stop"),
+                              _react2.default.createElement('button', {
+                                onClick: () => restartAgent(agent.name),
+                                className: "px-2 py-1 text-xs bg-yellow-600 hover:bg-yellow-700 rounded smooth-transition custom-button"
+                              }, "Restart")
+                            )
+                          ) : (
+                            _react2.default.createElement('button', {
+                              onClick: () => startAgent(agent.name),
+                              className: "px-2 py-1 text-xs bg-green-600 hover:bg-green-700 rounded smooth-transition custom-button"
+                            }, "Start")
+                          )
+                        )
+
                         , _react2.default.createElement('div', { className: "text-xs text-gray-300 space-y-1"  ,}
                           , _react2.default.createElement('div', { className: "flex items-center gap-2"  ,}
                             , _react2.default.createElement(_lucidereact.Heart, { className: "w-3 h-3" ,} )
@@ -1009,6 +1092,16 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
                     )
                   )
                 )
+              )
+              , _react2.default.createElement('div', { className: "flex gap-2 mt-3 pt-3 border-t border-gray-600" },
+                _react2.default.createElement('button', {
+                  onClick: killAllAgents,
+                  className: "flex-1 px-3 py-2 text-sm bg-red-600 hover:bg-red-700 rounded smooth-transition custom-button"
+                }, "Stop All"),
+                _react2.default.createElement('button', {
+                  onClick: shutdown,
+                  className: "flex-1 px-3 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded smooth-transition custom-button"
+                }, "Shutdown")
               )
             )
 
@@ -1095,6 +1188,7 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
                               )
                             )
                           ))
+                          , _react2.default.createElement('div', { ref: messagesEndRef })
                         )
                       ) : (
                         _react2.default.createElement('div', { className: "text-gray-400 text-center py-4 text-sm"   ,}

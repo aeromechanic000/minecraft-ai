@@ -23,6 +23,7 @@ export class PluginInstance {
                 perform : async function(agent, duration) {
                     agent.bot.chat("I am dancing~");
                     agent.bot.setControlState("jump", true);
+                    agent.bot.chat("I am happy")
                     await new Promise((resolve) => setTimeout(resolve, duration));
                     agent.bot.setControlState("jump", false);
                 }

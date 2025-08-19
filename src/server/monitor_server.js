@@ -6,13 +6,19 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors_proxy from 'cors-anywhere';
+import cors from 'cors';
+
 
 // Module-level variables
 let io;
 let server;
 const registeredAgents = new Set();
-const inGameAgents = {};
 const agentManagers = {}; // socket for main process that registers/controls agents
+const agentSockets = {}; 
+const agentMessages = new Map(); // Store messages sent to agents
+const actionLogs = []; // Store action logs for frontend
+const agentStatusLogs = []; // Store status change logs
+const pendingStatusRequests = new Map(); // Add this line for status requests
 
 // New data structures for API functionality
 const agentDatabase = new Map(); // Store detailed agent information
@@ -30,6 +36,10 @@ const systemConfig = {
     },
     restrictedAreas: []
 };
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
 
 export function createProxyServer(port = 8081, options = []) {
     const defaultOptions = {
@@ -52,12 +62,19 @@ export function createProxyServer(port = 8081, options = []) {
 }
 
 // Initialize the server
-export function createMindServer(port = 8080) {
+export function createMonitorServer(port = 8080) {
     const app = express();
     server = http.createServer(app);
     io = new Server(server);
 
     // Middleware
+    app.use(cors({
+        origin: [`http://localhost:${port}`],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    }));
+
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
 
@@ -67,135 +84,6 @@ export function createMindServer(port = 8080) {
 
     // ==================== REST API ENDPOINTS ====================
 
-    // 8.1 Register New Agent
-    app.post('/api/agents/register', (req, res) => {
-        try {
-            const { name, uuid, type, spawnLocation, capabilities, gameMode, initialInventory } = req.body;
-            
-            // Validate input
-            if (!name || !uuid) {
-                return res.status(400).json({
-                    success: false,
-                    error: "INVALID_INPUT",
-                    message: "Agent name and UUID are required"
-                });
-            }
-
-            // Check if agent already exists
-            if (registeredAgents.has(name) || Array.from(agentDatabase.values()).some(agent => agent.uuid === uuid)) {
-                return res.status(409).json({
-                    success: false,
-                    error: "AGENT_ALREADY_EXISTS",
-                    message: "Agent with this name or UUID already registered"
-                });
-            }
-
-            // Check agent limit
-            if (registeredAgents.size >= systemConfig.maxAgents) {
-                return res.status(429).json({
-                    success: false,
-                    error: "AGENT_LIMIT_REACHED",
-                    message: "Maximum number of agents reached"
-                });
-            }
-
-            // Create agent record
-            const agentId = Date.now(); // Simple ID generation
-            const apiKey = `agent_key_${Math.random().toString(36).substr(2, 9)}`;
-            
-            const agentData = {
-                id: agentId,
-                name,
-                uuid,
-                type: type || "autonomous",
-                spawnLocation: spawnLocation || { x: 0, y: 64, z: 0, dimension: "overworld" },
-                capabilities: capabilities || [],
-                gameMode: gameMode || "survival",
-                initialInventory: initialInventory || {},
-                status: "offline",
-                registeredAt: new Date().toISOString(),
-                apiKey,
-                lastHeartbeat: null,
-                currentTask: null,
-                stats: {
-                    totalPlayTime: 0,
-                    tasksCompleted: 0,
-                    blocksPlaced: 0,
-                    blocksBroken: 0
-                }
-            };
-
-            agentDatabase.set(name, agentData);
-            registeredAgents.add(name);
-
-            res.json({
-                success: true,
-                data: {
-                    id: agentId,
-                    name,
-                    uuid,
-                    status: "offline",
-                    registeredAt: agentData.registeredAt,
-                    apiKey
-                }
-            });
-
-            // Broadcast update
-            agentsUpdate();
-
-        } catch (error) {
-            console.error('Error registering agent:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to register agent"
-            });
-        }
-    });
-
-    // 8.2 Unregister Agent
-    app.delete('/api/agents/:agentId/unregister', (req, res) => {
-        try {
-            const agentId = parseInt(req.params.agentId);
-            
-            // Find agent by ID
-            const agent = Array.from(agentDatabase.values()).find(a => a.id === agentId);
-            if (!agent) {
-                return res.status(404).json({
-                    success: false,
-                    error: "AGENT_NOT_FOUND",
-                    message: "Agent not found"
-                });
-            }
-
-            // Remove agent from all data structures
-            registeredAgents.delete(agent.name);
-            agentDatabase.delete(agent.name);
-            delete inGameAgents[agent.name];
-            delete agentManagers[agent.name];
-
-            res.json({
-                success: true,
-                message: "Agent successfully unregistered",
-                data: {
-                    finalStats: agent.stats
-                }
-            });
-
-            // Broadcast update
-            agentsUpdate();
-
-        } catch (error) {
-            console.error('Error unregistering agent:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to unregister agent"
-            });
-        }
-    });
-
-    // 8.3 Update Agent Status (Heartbeat)
     app.put('/api/agents/:agentId/heartbeat', (req, res) => {
         try {
             const agentId = parseInt(req.params.agentId);
@@ -469,7 +357,107 @@ export function createMindServer(port = 8080) {
         }
     });
 
-    // 11.1 Get Agent Performance
+    app.get('/api/agents/:agentName/status', async (req, res) => {
+        try {
+            const agentName = req.params.agentName;
+            await updateAgentData(agentName);
+            const agent = Array.from(agentDatabase.values()).find(a => a.name === agentName);
+            if (!agent) {
+                return res.status(404).json({
+                    success: false,
+                    error: "AGENT_NOT_FOUND",
+                    message: "Agent not found"
+                });
+            }
+
+            res.json({
+                success: true,
+                data: agent, 
+            });
+
+        } catch (error) {
+            console.error('Error getting agent status:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get agent status"
+            });
+        }
+    });
+    
+    app.get('/api/agents/:agentName/messages', async (req, res) => {
+        try {
+            const agentName = req.params.agentName;
+
+            res.json({
+                success: true,
+                data: agentMessages.get(agentName) || [], 
+            });
+
+        } catch (error) {
+            console.error('Error getting agent messages:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get agent messages"
+            });
+        }
+    });
+    
+    // Send command to agent
+    app.post('/api/agents/:agentName/command', (req, res) => {
+        try {
+            const agentName = req.params.agentName;
+            const { command } = req.body;
+            
+            const agent = Array.from(agentDatabase.values()).find(a => a.name === agentName);
+            if (!agent) {
+                return res.status(404).json({
+                    success: false,
+                    error: "AGENT_NOT_FOUND",
+                    message: "Agent not found"
+                });
+            }
+
+            // Store the message
+            if (!agentMessages.has(agentName)) {
+                agentMessages.set(agentName, []);
+            }
+            
+            const message = {
+                id: Date.now(),
+                message: command,
+                timestamp: new Date().toLocaleTimeString(),
+                sender: 'user',
+                status: 'delivered'
+            };
+            
+            agentMessages.get(agentName).unshift(message);
+            
+            // Keep only last 50 messages
+            if (agentMessages.get(agentName).length > 50) {
+                agentMessages.get(agentName).splice(50);
+            }
+
+            sendCommand(agentName, command);
+
+            res.json({
+                success: true,
+                data: {
+                    messageId: message.id,
+                    status: 'delivered'
+                }
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to send command"
+            });
+        }
+    });
+
     app.get('/api/agents/:agentId/analytics', (req, res) => {
         try {
             const agentId = parseInt(req.params.agentId);
@@ -518,7 +506,6 @@ export function createMindServer(port = 8080) {
         }
     });
 
-    // 11.2 Get System Analytics
     app.get('/api/analytics/system', (req, res) => {
         try {
             const { period = 'day' } = req.query;
@@ -564,7 +551,6 @@ export function createMindServer(port = 8080) {
         }
     });
 
-    // 12.1 Get System Configuration
     app.get('/api/config', (req, res) => {
         res.json({
             success: true,
@@ -572,7 +558,6 @@ export function createMindServer(port = 8080) {
         });
     });
 
-    // 12.2 Update System Configuration
     app.put('/api/config', (req, res) => {
         try {
             const updates = req.body;
@@ -592,112 +577,6 @@ export function createMindServer(port = 8080) {
                 success: false,
                 error: "INTERNAL_ERROR",
                 message: "Failed to update configuration"
-            });
-        }
-    });
-
-    // 13.1 Create Agent Backup
-    app.post('/api/agents/:agentId/backup', (req, res) => {
-        try {
-            const agentId = parseInt(req.params.agentId);
-            
-            const agent = Array.from(agentDatabase.values()).find(a => a.id === agentId);
-            if (!agent) {
-                return res.status(404).json({
-                    success: false,
-                    error: "AGENT_NOT_FOUND",
-                    message: "Agent not found"
-                });
-            }
-
-            // TODO: Implement actual backup creation
-            const backupId = `backup_${Date.now()}`;
-            const backup = {
-                backupId,
-                agentState: {
-                    inventory: agent.currentState?.inventory || {},
-                    location: agent.currentState?.coordinates || agent.spawnLocation,
-                    experience: agent.currentState?.experience || 0,
-                    health: agent.currentState?.health || 20
-                },
-                createdAt: new Date().toISOString()
-            };
-
-            res.json({
-                success: true,
-                data: backup
-            });
-
-        } catch (error) {
-            console.error('Error creating backup:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to create backup"
-            });
-        }
-    });
-
-    // 13.2 Restore Agent from Backup
-    app.post('/api/agents/:agentId/restore', (req, res) => {
-        try {
-            const agentId = parseInt(req.params.agentId);
-            const { backupId, restoreInventory, restoreLocation, restoreExperience } = req.body;
-            
-            const agent = Array.from(agentDatabase.values()).find(a => a.id === agentId);
-            if (!agent) {
-                return res.status(404).json({
-                    success: false,
-                    error: "AGENT_NOT_FOUND",
-                    message: "Agent not found"
-                });
-            }
-
-            // TODO: Implement actual restore logic
-            // This would involve sending commands to the Minecraft server
-            // to restore the agent's state
-
-            res.json({
-                success: true,
-                message: "Agent restored successfully from backup",
-                data: {
-                    backupId,
-                    restoredAt: new Date().toISOString()
-                }
-            });
-
-        } catch (error) {
-            console.error('Error restoring agent:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to restore agent"
-            });
-        }
-    });
-
-    // Get all agents
-    app.get('/api/agents', (req, res) => {
-        try {
-            const agents = Array.from(agentDatabase.values()).map(agent => ({
-                id: agent.id,
-                name: agent.name,
-                status: agent.status,
-                lastHeartbeat: agent.lastHeartbeat,
-                currentTask: agent.currentTask,
-                registeredAt: agent.registeredAt
-            }));
-
-            res.json({
-                success: true,
-                data: agents
-            });
-        } catch (error) {
-            console.error('Error getting agents:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get agents"
             });
         }
     });
@@ -746,36 +625,160 @@ export function createMindServer(port = 8080) {
         }
     });
 
+    app.get('/api/system/status', (req, res) => {
+        try {
+            const systemStatus = {
+                totalAgents: registeredAgents.size,
+                activeAgents: Object.keys(inGameAgents).length,
+                serverStatus: 'Connected',
+                uptime: process.uptime() ? formatUptime(process.uptime()) : '0:00:00',
+                memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+                tasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats?.tasksCompleted || 0), 0)
+            };
+
+            res.json({
+                success: true,
+                data: systemStatus
+            });
+        } catch (error) {
+            console.error('Error getting system status:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get system status"
+            });
+        }
+    });
+
+    // Minecraft server info
+    app.get('/api/minecraft/server', (req, res) => {
+        try {
+            res.json({
+                success: true,
+                data: {
+                    serverStatus: 'online',
+                    playerCount: Object.keys(inGameAgents).length,
+                    maxPlayers: systemConfig.maxAgents,
+                    version: '1.20.1',
+                    motd: 'AI Agent Server'
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get server info"
+            });
+        }
+    });
+
+    
+
+    // Action logs
+    app.get('/api/logs/actions', (req, res) => {
+        try {
+            const { limit = 50 } = req.query;
+            const logs = actionLogs.slice(0, parseInt(limit));
+            
+            res.json({
+                success: true,
+                data: {
+                    logs: logs
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get action logs"
+            });
+        }
+    });
+
+    // Agent status logs  
+    app.get('/api/logs/agent-status', (req, res) => {
+        try {
+            const { limit = 50 } = req.query;
+            const logs = agentStatusLogs.slice(0, parseInt(limit));
+            
+            res.json({
+                success: true,
+                data: {
+                    logs: logs
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get agent status logs"
+            });
+        }
+    });
+
     // ==================== SOCKET.IO HANDLERS ====================
 
     // Socket.io connection handling
     io.on('connection', (socket) => {
         let curAgentName = null;
-        console.log('Client connected');
+        console.log('Client connected:', socket.id);
 
-        agentsUpdate(socket);
-        keysUpdate(socket);
-        portsUpdate(socket);
+        // Send initial data to newly connected client
+        sendInitialData(socket);
 
+        // Handle agent registration (from agent processes)
         socket.on('register-agents', (agentNames) => {
             console.log(`Registering agents: ${agentNames}`);
-            agentNames.forEach(name => registeredAgents.add(name));
+            agentNames.forEach(name => {
+                registeredAgents.add(name);
+                
+                // Create agent entry in database if not exists
+                if (!agentDatabase.has(name)) {
+                    const agentData = {
+                        id: Date.now() + Math.random(),
+                        name: name,
+                        status: 'offline',
+                        health: 20,
+                        maxHealth: 20,
+                        hunger: 20,
+                        experience: 0,
+                        gameMode: 'survival',
+                        dimension: 'overworld',
+                        biome: 'plains',
+                        coordinates: { x: 0, y: 0, z: 0 },
+                        task: null,
+                        registeredAt: new Date().toISOString(),
+                        lastHeartbeat: new Date().toISOString(),
+                        currentTask: null,
+                        stats: {
+                            totalPlayTime: 0,
+                            tasksCompleted: 0,
+                            blocksPlaced: 0,
+                            blocksBroken: 0
+                        }
+                    };
+                    agentDatabase.set(name, agentData);
+                }
+            });
+            
             for (let name of agentNames) {
                 agentManagers[name] = socket;
             }
+            
             socket.emit('register-agents-success');
-            agentsUpdate();
+
+            broadcastAgentsUpdate();
+            broadcastSystemStatus();
         });
 
         socket.on('login-agent', (agentName) => {
-            if (curAgentName && curAgentName !== agentName) {
-                console.warn(`Agent ${agentName} already logged in as ${curAgentName}`);
+            if (agentSockets[agentName]) {
+                console.warn(`Agent ${agentName} already logged in.`);
                 return;
             }
+
             if (registeredAgents.has(agentName)) {
-                curAgentName = agentName;
-                inGameAgents[agentName] = socket;
-                
+                agentSockets[agentName] = socket;
                 // Update agent status in database
                 const agent = agentDatabase.get(agentName);
                 if (agent) {
@@ -783,15 +786,19 @@ export function createMindServer(port = 8080) {
                     agent.lastHeartbeat = new Date().toISOString();
                 }
                 
-                agentsUpdate();
+                broadcastAgentsUpdate();
+                broadcastSystemStatus();
+                
+                // Add status log
+                addAgentStatusLog(agentName, 'login', 'success', 'Agent logged in successfully');
             } else {
                 console.warn(`Agent ${agentName} not registered`);
             }
         });
 
         socket.on('logout-agent', (agentName) => {
-            if (inGameAgents[agentName]) {
-                delete inGameAgents[agentName];
+            if (agentSockets[agentName]) {
+                delete agentSockets[agentName];
                 
                 // Update agent status in database
                 const agent = agentDatabase.get(agentName);
@@ -799,37 +806,84 @@ export function createMindServer(port = 8080) {
                     agent.status = 'offline';
                 }
                 
-                agentsUpdate();
+                broadcastAgentsUpdate();
+                broadcastSystemStatus();
+                
+                // Add status log
+                addAgentStatusLog(agentName, 'logout', 'info', 'Agent logged out');
             }
         });
 
-        socket.on('disconnect', () => {
-            console.log('Client disconnected');
-            if (inGameAgents[curAgentName]) {
-                delete inGameAgents[curAgentName];
-                
-                // Update agent status in database
-                const agent = agentDatabase.get(curAgentName);
-                if (agent) {
-                    agent.status = 'offline';
-                }
-                
-                agentsUpdate();
-            }
+        // Handle data requests from frontend
+        socket.on('request-agents-data', () => {
+            sendAgentsData(socket);
+        });
+
+        socket.on('request-system-status', () => {
+            sendSystemStatus(socket);
+        });
+
+        socket.on('request-agent-messages', (agentId) => {
+            sendAgentMessages(socket, agentId);
+        });
+
+        socket.on('request-action-logs', (limit = 50) => {
+            sendActionLogs(socket, limit);
+        });
+
+        socket.on('request-agent-status-logs', (limit = 50) => {
+            sendAgentStatusLogs(socket, limit);
+        });
+
+        socket.on('request-tasks-data', () => {
+            sendTasksData(socket);
+        });
+
+        socket.on('request-events-data', (limit = 100, type = null) => {
+            sendEventsData(socket, limit, type);
         });
 
         socket.on('chat-message', (agentName, json) => {
-            if (!inGameAgents[agentName]) {
+            if (!agentSockets[agentName]) {
                 console.warn(`Agent ${agentName} tried to send a message but is not logged in`);
                 return;
             }
-            console.log(`${curAgentName} sending message to ${agentName}: ${json.message}`);
-            inGameAgents[agentName].emit('chat-message', curAgentName, json);
+            console.log(`Sending message to ${agentName}: ${json.message}`);
+            agentSockets[agentName].emit('chat-message', "Administrator", json);
+            addAgentStatusLog(agentName, 'chat', 'success', 'Sent message to agent.');
+        });
+        
+        socket.on('send-message', (agentName, message) => {
+            if (!agentSockets[agentName]) {
+                console.warn(`Agent ${agentName} not logged in, cannot send message via Monitor Server.`);
+                return
+            }
+            try {
+                console.log(`Sending message to agent ${agentName}: ${message}`);
+                agentSockets[agentName].emit('send-message', agentName, message);
+                addAgentStatusLog(agentName, 'chat', 'success', 'Sent message to agent.');
+            } catch (error) {
+                console.error('Error: ', error);
+            }
+        });
+
+        socket.on('status-response', (requestId, status) => {
+            const request = pendingStatusRequests.get(requestId);
+            if (request) {
+                clearTimeout(request.timeout);
+                pendingStatusRequests.delete(requestId);
+                request.resolve(status); 
+                if (status) {
+                    addAgentStatusLog(status.name, 'status', 'success', 'Received update of agent status.');
+                } else {
+                    addAgentStatusLog(status.name, 'chat', 'error', 'Received null status.');
+                }
+            }
         });
 
         socket.on('restart-agent', (agentName) => {
             console.log(`Restarting agent: ${agentName}`);
-            inGameAgents[agentName].emit('restart-agent');
+            agentManagers[agentName].emit('restart-agent');
         });
 
         socket.on('stop-agent', (agentName) => {
@@ -866,44 +920,196 @@ export function createMindServer(port = 8080) {
                 process.exit(0);
             }, 2000);
         });
-
-        socket.on('send-message', (agentName, message) => {
-            if (!inGameAgents[agentName]) {
-                console.warn(`Agent ${agentName} not logged in, cannot send message via MindServer.`);
-                return
-            }
-            try {
-                console.log(`Sending message to agent ${agentName}: ${message}`);
-                inGameAgents[agentName].emit('send-message', agentName, message)
-            } catch (error) {
-                console.error('Error: ', error);
-            }
-        });
     });
 
     server.listen(port, 'localhost', () => {
-        console.log(`MindServer running on port ${port}`);
+        console.log(`Monitor Server running on port ${port}`);
     });
 
     return server;
 }
 
-function agentsUpdate(socket) {
-    if (!socket) {
-        socket = io;
+// WebSocket data sender functions
+function sendInitialData(socket) {
+    sendAgentsData(socket);
+    sendSystemStatus(socket);
+    sendActionLogs(socket, 50);
+    sendAgentStatusLogs(socket, 50);
+    sendTasksData(socket);
+    keysUpdate(socket);
+}
+
+// Helper function to format uptime
+function formatUptime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function sendAgentsData(socket) {
+    const agents = Array.from(agentDatabase.values()).map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        status: agent.status,
+        lastHeartbeat: agent.lastHeartbeat,
+        currentTask: agent.currentTask,
+        registeredAt: agent.registeredAt,
+        health: agent.health || 20,
+        maxHealth: agent.maxHealth || 20,
+        hunger: agent.hunger || 20,
+        experience: agent.experience || 0,
+        gameMode: agent.gameMode || 'survival',
+        dimension: agent.dimension || 'overworld',
+        biome: agent.biome || 'plains',
+        coordinates: agent.coordinates || { x: 0, y: 64, z: 0 },
+        task: agent.currentTask || null,
+    }));
+    
+    socket.emit('agents-update', agents);
+}
+
+function sendSystemStatus(socket) {
+    const now = new Date();
+    const systemStatus = {
+        totalAgents: registeredAgents.size,
+        activeAgents: Object.keys(agentManagers).length,
+        serverStatus: 'Connected',
+        uptime: now.toLocaleTimeString('en-GB', { hour12: false }),
+        memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+        tasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats?.tasksCompleted || 0), 0)
+    };
+    
+    socket.emit('system-status', systemStatus);
+}
+
+function sendCommand(agentName, command) {
+    if (!agentSockets[agentName]) {
+        console.warn(`Agent ${agentName} not logged in, cannot send command via Monitor Server.`);
+        return
     }
+    try {
+        console.log(`Sending command to agent ${agentName}: ${command}`);
+        agentSockets[agentName].emit('send-message', "Administrator", command);
+        addAgentStatusLog(agentName, 'chat', 'success', 'Sent message to agent.');
+    } catch (error) {
+        console.error('Error: ', error);
+    }
+} 
+
+function sendActionLogs(socket, limit = 50) {
+    const logs = actionLogs.slice(0, parseInt(limit));
+    socket.emit('action-logs', logs);
+}
+
+function sendAgentStatusLogs(socket, limit = 50) {
+    const logs = agentStatusLogs.slice(0, parseInt(limit));
+    socket.emit('agent-status-logs', logs);
+}
+
+function sendTasksData(socket) {
+    const tasks = Array.from(taskDatabase.values());
+    socket.emit('tasks-data', tasks);
+}
+
+function sendEventsData(socket, limit = 100, type = null) {
+    let events = eventLog;
+    
+    if (type) {
+        events = events.filter(event => event.eventType === type);
+    }
+    
+    events = events.slice(-limit);
+    socket.emit('events-data', events);
+}
+
+// Broadcast functions
+function broadcastAgentsUpdate() {
+    io.emit('agents-update', getAgentsUpdateData());
+    io.sockets.sockets.forEach(socket => sendAgentsData(socket));
+}
+
+function broadcastSystemStatus() {
+    io.sockets.sockets.forEach(socket => sendSystemStatus(socket));
+}
+
+function addAgentStatusLog(agentName, event, type, message, data = null) {
+    const logEntry = {
+        id: Date.now(),
+        agent: agentName,
+        event: event,
+        type: type,
+        message: message,
+        data: data,
+        timestamp: new Date().toLocaleTimeString()
+    };
+    
+    agentStatusLogs.unshift(logEntry);
+    
+    // Keep only last 100 logs
+    if (agentStatusLogs.length > 100) {
+        agentStatusLogs.splice(100);
+    }
+    
+    // Broadcast to all connected clients
+    io.emit('new-agent-status-log', logEntry);
+}
+
+function requestAgentStatus(agentName) {
+    return new Promise((resolve, reject) => {
+        const requestId = generateId();
+        const timeout = setTimeout(() => {
+            pendingStatusRequests.delete(requestId);
+            console.warn(`Request timeout for agent ${agentName}`); 
+            resolve(null);
+        }, 5000);
+
+        pendingStatusRequests.set(requestId, { resolve, reject, timeout });
+        
+        if (agentSockets[agentName]) {
+            agentSockets[agentName].emit('request-status', requestId);
+        } else {
+            clearTimeout(timeout);
+            pendingStatusRequests.delete(requestId);
+            console.warn(`Agent ${agentName} not connected`);
+            resolve(null); 
+        }
+    });
+}
+
+async function updateAgentData(agentName) {
+    try {
+        const status = await requestAgentStatus(agentName);
+        const agent = agentDatabase.get(agentName);
+        if (agent) {
+            Object.assign(agent, status);
+            agentDatabase.set(agentName, agent);
+        }
+    } catch (error) {
+        console.error("Error updating agent data:", error);
+        throw error;
+    }
+}
+
+function updateAgentDatabase() {
+    registeredAgents.forEach(name => {
+        updateAgentData(name);
+    })
+}
+
+function getAgentsUpdateData() {
+    updateAgentDatabase();
     let agents = [];
     registeredAgents.forEach(name => {
         const agentData = agentDatabase.get(name);
         agents.push({
             name, 
-            in_game: !!inGameAgents[name],
             id: agentData?.id,
             status: agentData?.status || 'offline',
             lastHeartbeat: agentData?.lastHeartbeat
         });
     });
-    socket.emit('agents-update', agents);
+    return agents;
 }
 
 function keysUpdate(socket) {
@@ -918,29 +1124,11 @@ function keysUpdate(socket) {
     socket.emit('keys-update', keys);
 }
 
-function portsUpdate(socket) {
-    if (!socket) {
-        socket = io;
-    }
-    let ports = {
-        "proxy" : settings.proxyserver_port,
-        "mind" : settings.mindserver_port,
-    };
-    socket.emit('ports-update', ports);
-}
-
 function stopAllAgents() {
-    for (const agentName in inGameAgents) {
+    for (const agentName in agentManagers) {
         let manager = agentManagers[agentName];
         if (manager) {
             manager.emit('stop-agent', agentName);
         }
     }
 }
-
-// Optional: export these if you need access to them from other files
-export const getIO = () => io;
-export const getServer = () => server;
-export const getConnectedAgents = () => inGameAgents;
-export const getAgentDatabase = () => agentDatabase;
-export const getTaskDatabase = () => taskDatabase;

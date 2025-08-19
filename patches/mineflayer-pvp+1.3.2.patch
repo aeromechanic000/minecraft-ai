@@ -1,0 +1,56 @@
+diff --git a/node_modules/mineflayer-pvp/HISTORY.md b/node_modules/mineflayer-pvp/HISTORY.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/LICENSE b/node_modules/mineflayer-pvp/LICENSE
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/README.md b/node_modules/mineflayer-pvp/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/._PVP.d.ts b/node_modules/mineflayer-pvp/lib/._PVP.d.ts
+new file mode 100755
+index 0000000..caecb51
+Binary files /dev/null and b/node_modules/mineflayer-pvp/lib/._PVP.d.ts differ
+diff --git a/node_modules/mineflayer-pvp/lib/._PVP.js b/node_modules/mineflayer-pvp/lib/._PVP.js
+new file mode 100755
+index 0000000..6ea82eb
+Binary files /dev/null and b/node_modules/mineflayer-pvp/lib/._PVP.js differ
+diff --git a/node_modules/mineflayer-pvp/lib/AttackSpeeds.json b/node_modules/mineflayer-pvp/lib/AttackSpeeds.json
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/Cooldown.d.ts b/node_modules/mineflayer-pvp/lib/Cooldown.d.ts
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/Cooldown.js b/node_modules/mineflayer-pvp/lib/Cooldown.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/PVP.d.ts b/node_modules/mineflayer-pvp/lib/PVP.d.ts
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/PVP.js b/node_modules/mineflayer-pvp/lib/PVP.js
+old mode 100644
+new mode 100755
+index 758c2b3..7c7220e
+--- a/node_modules/mineflayer-pvp/lib/PVP.js
++++ b/node_modules/mineflayer-pvp/lib/PVP.js
+@@ -48,7 +48,7 @@ class PVP {
+         this.meleeAttackRate = new TimingSolver_1.MaxDamageOffset();
+         this.bot = bot;
+         this.movements = new mineflayer_pathfinder_1.Movements(bot, require('minecraft-data')(bot.version));
+-        this.bot.on('physicTick', () => this.update());
++        this.bot.on('physicsTick', () => this.update());
+         this.bot.on('entityGone', e => { if (e === this.target)
+             this.stop(); });
+     }
+diff --git a/node_modules/mineflayer-pvp/lib/TimingSolver.d.ts b/node_modules/mineflayer-pvp/lib/TimingSolver.d.ts
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/TimingSolver.js b/node_modules/mineflayer-pvp/lib/TimingSolver.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/index.d.ts b/node_modules/mineflayer-pvp/lib/index.d.ts
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer-pvp/lib/index.js b/node_modules/mineflayer-pvp/lib/index.js
+old mode 100644
+new mode 100755

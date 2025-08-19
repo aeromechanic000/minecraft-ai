@@ -16,7 +16,7 @@ export class GroqCloudAPI {
         // Remove any mention of "tools" from params:
         if (this.params.tools)
             delete this.params.tools;
-        // This is just a bit of future-proofing in case we drag Mindcraft in that direction.
+        // This is just a bit of future-proofing.
 
         // I'm going to do a sneaky ReplicateAPI theft for a lot of this, aren't I?
         if (this.url)

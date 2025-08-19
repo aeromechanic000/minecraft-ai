@@ -4,10 +4,10 @@ const settings = {
     "port": 55916,
     "auth": "offline", // or "microsoft"
 
-    // the mindserver manages all agents and hosts the UI
-    "host_mindserver": true, // if true, the mindserver will be hosted on this machine. otherwise, specify a public IP address
-    "mindserver_host": "localhost",
-    "mindserver_port": 8080,
+    // the monitor server manages all agents and hosts the UI
+    "host_monitor_server": true, // if true, the monitor_server will be hosted on this machine. otherwise, specify a public IP address
+    "monitor_server_host": "localhost",
+    "monitor_server_port": 8080,
     "proxyserver_port": 8081,
     
     // the base profile is shared by all bots for default prompts/examples/modes
@@ -36,7 +36,7 @@ const settings = {
     "verbose_commands": true, // show full command syntax
     "narrate_behavior": true, // chat simple automatic actions ('Picking up item!')
     "chat_bot_messages": true, // publicly chat messages to other bots
-    "plugins" : [], // plugin will be loaded if and only if it's name appears here
+    "plugins" : ["Dance"], // plugin will be loaded if and only if it's name appears here
 }
 
 // these environment variables override certain settings

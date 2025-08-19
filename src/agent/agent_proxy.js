@@ -45,11 +45,44 @@ class AgentServerProxy {
 		
 		this.socket.on('send-message', (agentName, message) => {
 			try {
-				this.agent.respondFunc("NO USERNAME", message);
+				this.agent.respondFunc(agentName, message);
 			} catch (error) {
 				console.error('Error: ', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 			}
 		});
+
+        this.socket.on('request-status', (requestId) => {
+            try {
+                const status = {
+                    name : this.agent.name,
+                    status: 'online',
+                    health: this.agent.bot.health,
+                    maxHealth: 20,
+                    hunger: this.agent.bot.hunger,
+                    experience: this.agent.bot.experience.points,
+                    gameMode: this.agent.bot.game.gameMode,
+                    dimension: this.agent.bot.game.dimension,
+                    coordinates: { 
+                        x: Math.floor(this.agent.bot.entity.position.x), 
+                        y: Math.floor(this.agent.bot.entity.position.y), 
+                        z: Math.floor(this.agent.bot.entity.position.z), 
+                    },
+                    biome: 'plains',
+                    task: null,
+                    registeredAt: new Date().toISOString(),
+                    lastHeartbeat: new Date().toISOString(),
+                    stats: {
+                        totalPlayTime: 0,
+                        tasksCompleted: 0,
+                        blocksPlaced: 0,
+                        blocksBroken: 0
+                    }
+                };
+                this.socket.emit('status-response', requestId, status);
+            } catch (error) {
+                this.socket.emit('status-error', requestId, error.message);
+            }
+        });
     }
 
     login() {

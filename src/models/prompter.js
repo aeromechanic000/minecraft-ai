@@ -349,7 +349,7 @@ export class Prompter {
             prompt = prompt.replaceAll('$LAST_GOALS', goal_text.trim());
         }
 
-        // In mindcraft, the $BLUEPRINTS is used to show the construcctions of the npc.
+        // the $BLUEPRINTS is used to show the construcctions of the npc.
         if (prompt.includes('$BLUEPRINTS')) {
             if (this.agent.npc.constructions) {
                 let blueprints = '';

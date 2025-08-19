@@ -156,7 +156,7 @@ export function createMindServer(port = 8080) {
     });
 
     server.listen(port, 'localhost', () => {
-        console.log(`MindServer running on port ${port}`);
+        console.log(`Monitor Server running on port ${port}`);
     });
 
     return server;
@@ -191,7 +191,7 @@ function portsUpdate(socket) {
     }
     let ports = {
         "proxy" : settings.proxyserver_port,
-        "mind" : settings.mindserver_port,
+        "monitor" : settings.monitor_server_port,
     };
     socket.emit('ports-update', ports);
 }

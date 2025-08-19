@@ -1,0 +1,540 @@
+diff --git a/node_modules/mineflayer/.github/FUNDING.yml b/node_modules/mineflayer/.github/FUNDING.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/ISSUE_TEMPLATE/bug_report.md b/node_modules/mineflayer/.github/ISSUE_TEMPLATE/bug_report.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/ISSUE_TEMPLATE/config.yml b/node_modules/mineflayer/.github/ISSUE_TEMPLATE/config.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/ISSUE_TEMPLATE/feature_request.md b/node_modules/mineflayer/.github/ISSUE_TEMPLATE/feature_request.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/dependabot.yml b/node_modules/mineflayer/.github/dependabot.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/workflows/ci.yml b/node_modules/mineflayer/.github/workflows/ci.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/workflows/commands.yml b/node_modules/mineflayer/.github/workflows/commands.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.github/workflows/npm-publish.yml b/node_modules/mineflayer/.github/workflows/npm-publish.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/.gitpod.yml b/node_modules/mineflayer/.gitpod.yml
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/LICENSE b/node_modules/mineflayer/LICENSE
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/README.md b/node_modules/mineflayer/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/.nojekyll b/node_modules/mineflayer/docs/.nojekyll
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/CONTRIBUTING.md b/node_modules/mineflayer/docs/CONTRIBUTING.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/FAQ.md b/node_modules/mineflayer/docs/FAQ.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/README.md b/node_modules/mineflayer/docs/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/_sidebar.md b/node_modules/mineflayer/docs/_sidebar.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/api.md b/node_modules/mineflayer/docs/api.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/br/CONTRIBUTING_BR.md b/node_modules/mineflayer/docs/br/CONTRIBUTING_BR.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/br/FAQ_BR.md b/node_modules/mineflayer/docs/br/FAQ_BR.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/br/README_BR.md b/node_modules/mineflayer/docs/br/README_BR.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/br/api_br.md b/node_modules/mineflayer/docs/br/api_br.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/br/unstable_api_br.md b/node_modules/mineflayer/docs/br/unstable_api_br.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/demos.md b/node_modules/mineflayer/docs/demos.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/es/CONTRIBUTING_ES.md b/node_modules/mineflayer/docs/es/CONTRIBUTING_ES.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/es/FAQ_ES.md b/node_modules/mineflayer/docs/es/FAQ_ES.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/es/README_ES.md b/node_modules/mineflayer/docs/es/README_ES.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/es/api_es.md b/node_modules/mineflayer/docs/es/api_es.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/es/unstable_api_es.md b/node_modules/mineflayer/docs/es/unstable_api_es.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/fr/FAQ_FR.md b/node_modules/mineflayer/docs/fr/FAQ_FR.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/fr/README_FR.md b/node_modules/mineflayer/docs/fr/README_FR.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/history.md b/node_modules/mineflayer/docs/history.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/index.html b/node_modules/mineflayer/docs/index.html
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/mineflayer.ipynb b/node_modules/mineflayer/docs/mineflayer.ipynb
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/CONTRIBUTING_RU.md b/node_modules/mineflayer/docs/ru/CONTRIBUTING_RU.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/FAQ_RU.md b/node_modules/mineflayer/docs/ru/FAQ_RU.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/README_RU.md b/node_modules/mineflayer/docs/ru/README_RU.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/_sidebar.md b/node_modules/mineflayer/docs/ru/_sidebar.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/api_ru.md b/node_modules/mineflayer/docs/ru/api_ru.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/demos_ru.md b/node_modules/mineflayer/docs/ru/demos_ru.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/index.html b/node_modules/mineflayer/docs/ru/index.html
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/tutorial_ru.md b/node_modules/mineflayer/docs/ru/tutorial_ru.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/ru/unstable_api_ru.md b/node_modules/mineflayer/docs/ru/unstable_api_ru.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/tr/README_TR.md b/node_modules/mineflayer/docs/tr/README_TR.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/tutorial.md b/node_modules/mineflayer/docs/tutorial.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/unstable_api.md b/node_modules/mineflayer/docs/unstable_api.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/CONTRIBUTING.md b/node_modules/mineflayer/docs/zh/CONTRIBUTING.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/FAQ.md b/node_modules/mineflayer/docs/zh/FAQ.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/README_ZH_CN.md b/node_modules/mineflayer/docs/zh/README_ZH_CN.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/_sidebar.md b/node_modules/mineflayer/docs/zh/_sidebar.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/api.md b/node_modules/mineflayer/docs/zh/api.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/demos.md b/node_modules/mineflayer/docs/zh/demos.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/history.md b/node_modules/mineflayer/docs/zh/history.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/index.html b/node_modules/mineflayer/docs/zh/index.html
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/docs/zh/tutorial.md b/node_modules/mineflayer/docs/zh/tutorial.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/advanced/README.md b/node_modules/mineflayer/examples/advanced/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/advanced/chest_confirm.md b/node_modules/mineflayer/examples/advanced/chest_confirm.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/ansi.js b/node_modules/mineflayer/examples/ansi.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/anvil.js b/node_modules/mineflayer/examples/anvil.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/anvil_saver/package.json b/node_modules/mineflayer/examples/anvil_saver/package.json
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/anvil_saver/saver.js b/node_modules/mineflayer/examples/anvil_saver/saver.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/armor_stand.js b/node_modules/mineflayer/examples/armor_stand.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/attack.js b/node_modules/mineflayer/examples/attack.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/auto-eat.js b/node_modules/mineflayer/examples/auto-eat.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/auto_totem.js b/node_modules/mineflayer/examples/auto_totem.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/bee.js b/node_modules/mineflayer/examples/bee.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/block_entity.js b/node_modules/mineflayer/examples/block_entity.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/blockfinder.js b/node_modules/mineflayer/examples/blockfinder.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/book.js b/node_modules/mineflayer/examples/book.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/chat_parsing.js b/node_modules/mineflayer/examples/chat_parsing.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/chatterbox.js b/node_modules/mineflayer/examples/chatterbox.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/chest.js b/node_modules/mineflayer/examples/chest.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/cli/readline.js b/node_modules/mineflayer/examples/cli/readline.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/collectblock.js b/node_modules/mineflayer/examples/collectblock.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/command_block.js b/node_modules/mineflayer/examples/command_block.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/crossbower.js b/node_modules/mineflayer/examples/crossbower.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/crystal.js b/node_modules/mineflayer/examples/crystal.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/digger.js b/node_modules/mineflayer/examples/digger.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/discord.js b/node_modules/mineflayer/examples/discord.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/echo.js b/node_modules/mineflayer/examples/echo.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/elytra.js b/node_modules/mineflayer/examples/elytra.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/farmer.js b/node_modules/mineflayer/examples/farmer.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/fisherman.js b/node_modules/mineflayer/examples/fisherman.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/graffiti.js b/node_modules/mineflayer/examples/graffiti.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/guard.js b/node_modules/mineflayer/examples/guard.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/inventory.js b/node_modules/mineflayer/examples/inventory.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/jumper.js b/node_modules/mineflayer/examples/jumper.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/looker.js b/node_modules/mineflayer/examples/looker.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/modular_mineflayer/index.js b/node_modules/mineflayer/examples/modular_mineflayer/index.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/modular_mineflayer/modules/hello.js b/node_modules/mineflayer/examples/modular_mineflayer/modules/hello.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/multiple.js b/node_modules/mineflayer/examples/multiple.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/multiple_from_file.js b/node_modules/mineflayer/examples/multiple_from_file.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/pathfinder/gps.js b/node_modules/mineflayer/examples/pathfinder/gps.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/pathfinder/package.json b/node_modules/mineflayer/examples/pathfinder/package.json
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/perfectShotBow.js b/node_modules/mineflayer/examples/perfectShotBow.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/place_end_crystal/index.js b/node_modules/mineflayer/examples/place_end_crystal/index.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/place_end_crystal/package.json b/node_modules/mineflayer/examples/place_end_crystal/package.json
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/place_entity.js b/node_modules/mineflayer/examples/place_entity.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/plugins/afk.js b/node_modules/mineflayer/examples/plugins/afk.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/plugins/hello_world.js b/node_modules/mineflayer/examples/plugins/hello_world.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/python/README.md b/node_modules/mineflayer/examples/python/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/python/basic.py b/node_modules/mineflayer/examples/python/basic.py
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/python/chatterbox.py b/node_modules/mineflayer/examples/python/chatterbox.py
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/quitter.js b/node_modules/mineflayer/examples/quitter.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/raycast.js b/node_modules/mineflayer/examples/raycast.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/reconnector.js b/node_modules/mineflayer/examples/reconnector.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/repl.js b/node_modules/mineflayer/examples/repl.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/resourcepack.js b/node_modules/mineflayer/examples/resourcepack.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/scoreboard.js b/node_modules/mineflayer/examples/scoreboard.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/.dockerignore b/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/.dockerignore
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/Dockerfile b/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/Dockerfile
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/README.md b/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/package.json b/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/package.json
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/screenshot.js b/node_modules/mineflayer/examples/screenshot-with-node-canvas-webgl/screenshot.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/session.js b/node_modules/mineflayer/examples/session.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/skin_blinker.js b/node_modules/mineflayer/examples/skin_blinker.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/skin_data.js b/node_modules/mineflayer/examples/skin_data.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/sleeper.js b/node_modules/mineflayer/examples/sleeper.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/tab_complete.js b/node_modules/mineflayer/examples/tab_complete.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/telegram.js b/node_modules/mineflayer/examples/telegram.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/titles.js b/node_modules/mineflayer/examples/titles.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/trader.js b/node_modules/mineflayer/examples/trader.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/viewer/README.md b/node_modules/mineflayer/examples/viewer/README.md
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/viewer/package.json b/node_modules/mineflayer/examples/viewer/package.json
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/examples/viewer/viewer.js b/node_modules/mineflayer/examples/viewer/viewer.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/index.d.ts b/node_modules/mineflayer/index.d.ts
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/index.js b/node_modules/mineflayer/index.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/bossbar.js b/node_modules/mineflayer/lib/bossbar.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/conversions.js b/node_modules/mineflayer/lib/conversions.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/loader.js b/node_modules/mineflayer/lib/loader.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/location.js b/node_modules/mineflayer/lib/location.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/math.js b/node_modules/mineflayer/lib/math.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/painting.js b/node_modules/mineflayer/lib/painting.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/particle.js b/node_modules/mineflayer/lib/particle.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugin_loader.js b/node_modules/mineflayer/lib/plugin_loader.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/anvil.js b/node_modules/mineflayer/lib/plugins/anvil.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/bed.js b/node_modules/mineflayer/lib/plugins/bed.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/block_actions.js b/node_modules/mineflayer/lib/plugins/block_actions.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/blocks.js b/node_modules/mineflayer/lib/plugins/blocks.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/book.js b/node_modules/mineflayer/lib/plugins/book.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/boss_bar.js b/node_modules/mineflayer/lib/plugins/boss_bar.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/breath.js b/node_modules/mineflayer/lib/plugins/breath.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/chat.js b/node_modules/mineflayer/lib/plugins/chat.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/chest.js b/node_modules/mineflayer/lib/plugins/chest.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/command_block.js b/node_modules/mineflayer/lib/plugins/command_block.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/craft.js b/node_modules/mineflayer/lib/plugins/craft.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/creative.js b/node_modules/mineflayer/lib/plugins/creative.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/digging.js b/node_modules/mineflayer/lib/plugins/digging.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/enchantment_table.js b/node_modules/mineflayer/lib/plugins/enchantment_table.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/entities.js b/node_modules/mineflayer/lib/plugins/entities.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/experience.js b/node_modules/mineflayer/lib/plugins/experience.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/explosion.js b/node_modules/mineflayer/lib/plugins/explosion.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/fishing.js b/node_modules/mineflayer/lib/plugins/fishing.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/furnace.js b/node_modules/mineflayer/lib/plugins/furnace.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/game.js b/node_modules/mineflayer/lib/plugins/game.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/generic_place.js b/node_modules/mineflayer/lib/plugins/generic_place.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/health.js b/node_modules/mineflayer/lib/plugins/health.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/inventory.js b/node_modules/mineflayer/lib/plugins/inventory.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/kick.js b/node_modules/mineflayer/lib/plugins/kick.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/particle.js b/node_modules/mineflayer/lib/plugins/particle.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/physics.js b/node_modules/mineflayer/lib/plugins/physics.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/place_block.js b/node_modules/mineflayer/lib/plugins/place_block.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/place_entity.js b/node_modules/mineflayer/lib/plugins/place_entity.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/rain.js b/node_modules/mineflayer/lib/plugins/rain.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/ray_trace.js b/node_modules/mineflayer/lib/plugins/ray_trace.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/resource_pack.js b/node_modules/mineflayer/lib/plugins/resource_pack.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/scoreboard.js b/node_modules/mineflayer/lib/plugins/scoreboard.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/settings.js b/node_modules/mineflayer/lib/plugins/settings.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/simple_inventory.js b/node_modules/mineflayer/lib/plugins/simple_inventory.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/sound.js b/node_modules/mineflayer/lib/plugins/sound.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/spawn_point.js b/node_modules/mineflayer/lib/plugins/spawn_point.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/tablist.js b/node_modules/mineflayer/lib/plugins/tablist.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/team.js b/node_modules/mineflayer/lib/plugins/team.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/time.js b/node_modules/mineflayer/lib/plugins/time.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/title.js b/node_modules/mineflayer/lib/plugins/title.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/plugins/villager.js b/node_modules/mineflayer/lib/plugins/villager.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/promise_utils.js b/node_modules/mineflayer/lib/promise_utils.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/scoreboard.js b/node_modules/mineflayer/lib/scoreboard.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/team.js b/node_modules/mineflayer/lib/team.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/lib/version.js b/node_modules/mineflayer/lib/version.js
+old mode 100644
+new mode 100755
+diff --git a/node_modules/mineflayer/tsconfig.json b/node_modules/mineflayer/tsconfig.json
+old mode 100644
+new mode 100755
