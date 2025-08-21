@@ -38,11 +38,6 @@ class AgentServerProxy {
             convoManager.updateAgents(agents);
         });
 
-        this.socket.on('restart-agent', (agentName) => {
-            console.log(`Restarting agent: ${agentName}`);
-            this.agent.cleanKill();
-        });
-		
 		this.socket.on('send-message', (agentName, message) => {
 			try {
 				this.agent.respondFunc(agentName, message);

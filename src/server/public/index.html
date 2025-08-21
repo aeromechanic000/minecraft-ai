@@ -366,20 +366,28 @@ const MinecraftAIManager = () => {
     setVoiceStatus('Voice detection stopped');
   };
 
-  const updateAndSetSelectedAgent = async (agent) => {
-    const update = await getAgentStatus(agent.name);
-    const agentUpdate = { ...agent, ...update };
-    console.log("Agent Update:", agentUpdate);
+  const updateAgent = async (agentName) => {
+    const agent = agents.find(a => a.name=== agentName);
+    const update = await getAgentStatus(agentName);
+    console.log("Agent update:", update);
+    let agentUpdate = update || agent ;
+    if (update && agent) {
+      agentUpdate = { ...agent, ...update };
+    } 
     if (agentUpdate) {
       setAgents(prevAgents => 
         prevAgents.map(a => 
           a.name === agent.name ? agentUpdate : a
         )
       );
-      setSelectedAgent(agentUpdate);
-    } else {
-      setSelectedAgent(agent);
-    }
+      return agentUpdate;
+    } 
+    return agent; 
+  }
+
+  const updateAndSetSelectedAgent = async (agentName) => {
+    const agentUpdate = await updateAgent(agentName); 
+    setSelectedAgent(agentUpdate);
   };
 
   const processVoiceData = (audioData) => {
@@ -671,21 +679,28 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
   }
 
   // WebSocket-based agent control functions
-  const startAgent = (agentName) => {
-    if (socketRef.current) {
-      socketRef.current.emit('start-agent', agentName);
+  
+  const startAgent = async (agentName) => {
+    try {
+      const response = await apiRequest(`/agents/${agentName}/start`, {
+        method: 'GET',
+      });
+      await updateAndSetSelectedAgent(agentName);
+    } catch (error) {
+      console.error(`Failed to start agent ${agentName}:`, error);
+      throw error;
     }
   };
 
-  const stopAgent = (agentName) => {
-    if (socketRef.current) {
-      socketRef.current.emit('stop-agent', agentName);
-    }
-  };
-
-  const restartAgent = (agentName) => {
-    if (socketRef.current) {
-      socketRef.current.emit('restart-agent', agentName);
+  const stopAgent = async (agentName) => {
+    try {
+      const response = await apiRequest(`/agents/${agentName}/stop`, {
+        method: 'GET',
+      });
+      await updateAndSetSelectedAgent(agentName);
+    } catch (error) {
+      console.error(`Failed to stop agent ${agentName}:`, error);
+      throw error;
     }
   };
 
@@ -1017,7 +1032,7 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
                     , agents.map(agent => (
                       _react2.default.createElement('div', {
                         key: agent.id,
-                        onClick: () => updateAndSetSelectedAgent(agent),
+                        onClick: () => updateAndSetSelectedAgent(agent.name),
                         className: `p-3 rounded-lg cursor-pointer smooth-transition custom-button border ${
                           _optionalChain([selectedAgent, 'optionalAccess', _7 => _7.id]) === agent.id
                             ? 'bg-blue-600 border-blue-500 shadow-lg'
@@ -1042,11 +1057,7 @@ Please respond helpfully about the Minecraft AI system. Be concise and actionabl
                               _react2.default.createElement('button', {
                                 onClick: () => stopAgent(agent.name),
                                 className: "px-2 py-1 text-xs bg-red-600 hover:bg-red-700 rounded smooth-transition custom-button"
-                              }, "Stop"),
-                              _react2.default.createElement('button', {
-                                onClick: () => restartAgent(agent.name),
-                                className: "px-2 py-1 text-xs bg-yellow-600 hover:bg-yellow-700 rounded smooth-transition custom-button"
-                              }, "Restart")
+                              }, "Stop")
                             )
                           ) : (
                             _react2.default.createElement('button', {

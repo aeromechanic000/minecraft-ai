@@ -62,6 +62,8 @@ export function createProxyServer(port = 8081, options = []) {
 }
 
 // Initialize the server
+
+
 export function createMonitorServer(port = 8080) {
     const app = express();
     server = http.createServer(app);
@@ -357,6 +359,87 @@ export function createMonitorServer(port = 8080) {
         }
     });
 
+    app.get('/api/agents/:agentName/stop', (req, res) => {
+        try {
+            const agentName = req.params.agentName;
+
+            const socket = agentSockets[agentName];
+            if (!socket) {
+                return res.status(404).json({
+                    success: false,
+                    error: "AGENT_SOCKET_NOT_FOUND",
+                    message: `No socket found for agent ${agentName}`
+                });
+            }
+            logoutAgent(agentName);
+
+            const manager = agentManagers[agentName];
+            if (!manager) {
+                return res.status(404).json({
+                    success: false,
+                    error: "AGENT_MANAGER_NOT_FOUND",
+                    message: `No manager found for agent ${agentName}`
+                });
+            }
+            manager.emit('stop-agent', agentName);
+            
+            const agent = agentDatabase.get(agentName);
+            if (agent) {
+                agent.status = 'stopping';
+            }
+            
+            addAgentStatusLog(agentName, 'stop', 'info', 'Stop command sent to agent');
+            
+            res.json({
+                success: true,
+                message: `Stop command sent to agent ${agentName}`
+            });
+
+        } catch (error) {
+            console.error('Error stopping agent:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to stop agent"
+            });
+        }
+    });
+    
+    app.get('/api/agents/:agentName/start', (req, res) => {
+        try {
+            const agentName = req.params.agentName;
+            const manager = agentManagers[agentName];
+            if (!manager) {
+                return res.status(404).json({
+                    success: false,
+                    error: "AGENT_MANAGER_NOT_FOUND",
+                    message: `No manager found for agent ${agentName}`
+                });
+            }
+
+            manager.emit('start-agent', agentName);
+            const agent = agentDatabase.get(agentName);
+            if (agent) {
+                agent.status = 'online';
+            }
+            
+            addAgentStatusLog(agentName, 'start', 'info', 'Start command sent to agent');
+            
+            res.json({
+                success: true,
+                message: `Start command sent to agent ${agentName}`
+            });
+
+        } catch (error) {
+            console.error('Error starting agent:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to start agent"
+            });
+        }
+    });
+    
     app.get('/api/agents/:agentName/status', async (req, res) => {
         try {
             const agentName = req.params.agentName;
@@ -369,7 +452,6 @@ export function createMonitorServer(port = 8080) {
                     message: "Agent not found"
                 });
             }
-
             res.json({
                 success: true,
                 data: agent, 
@@ -454,54 +536,6 @@ export function createMonitorServer(port = 8080) {
                 success: false,
                 error: "INTERNAL_ERROR",
                 message: "Failed to send command"
-            });
-        }
-    });
-
-    app.get('/api/agents/:agentId/analytics', (req, res) => {
-        try {
-            const agentId = parseInt(req.params.agentId);
-            const { period = 'day', metrics } = req.query;
-            
-            const agent = Array.from(agentDatabase.values()).find(a => a.id === agentId);
-            if (!agent) {
-                return res.status(404).json({
-                    success: false,
-                    error: "AGENT_NOT_FOUND",
-                    message: "Agent not found"
-                });
-            }
-
-            // TODO: Implement actual analytics calculation based on stored data
-            const mockMetrics = {
-                uptime: "23:45:30",
-                tasksCompleted: agent.stats.tasksCompleted || 0,
-                tasksFailedRate: 0.067,
-                averageTaskDuration: "00:18:30",
-                blocksPlaced: agent.stats.blocksPlaced || 0,
-                blocksBroken: agent.stats.blocksBroken || 0,
-                distanceTraveled: 5420.5,
-                experienceGained: 345,
-                deathCount: 2,
-                efficiency: 0.92
-            };
-
-            res.json({
-                success: true,
-                data: {
-                    agentId,
-                    period,
-                    metrics: mockMetrics,
-                    hourlyBreakdown: [] // TODO: Implement hourly breakdown
-                }
-            });
-
-        } catch (error) {
-            console.error('Error getting agent analytics:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get agent analytics"
             });
         }
     });
@@ -672,8 +706,6 @@ export function createMonitorServer(port = 8080) {
         }
     });
 
-    
-
     // Action logs
     app.get('/api/logs/actions', (req, res) => {
         try {
@@ -797,74 +829,7 @@ export function createMonitorServer(port = 8080) {
         });
 
         socket.on('logout-agent', (agentName) => {
-            if (agentSockets[agentName]) {
-                delete agentSockets[agentName];
-                
-                // Update agent status in database
-                const agent = agentDatabase.get(agentName);
-                if (agent) {
-                    agent.status = 'offline';
-                }
-                
-                broadcastAgentsUpdate();
-                broadcastSystemStatus();
-                
-                // Add status log
-                addAgentStatusLog(agentName, 'logout', 'info', 'Agent logged out');
-            }
-        });
-
-        // Handle data requests from frontend
-        socket.on('request-agents-data', () => {
-            sendAgentsData(socket);
-        });
-
-        socket.on('request-system-status', () => {
-            sendSystemStatus(socket);
-        });
-
-        socket.on('request-agent-messages', (agentId) => {
-            sendAgentMessages(socket, agentId);
-        });
-
-        socket.on('request-action-logs', (limit = 50) => {
-            sendActionLogs(socket, limit);
-        });
-
-        socket.on('request-agent-status-logs', (limit = 50) => {
-            sendAgentStatusLogs(socket, limit);
-        });
-
-        socket.on('request-tasks-data', () => {
-            sendTasksData(socket);
-        });
-
-        socket.on('request-events-data', (limit = 100, type = null) => {
-            sendEventsData(socket, limit, type);
-        });
-
-        socket.on('chat-message', (agentName, json) => {
-            if (!agentSockets[agentName]) {
-                console.warn(`Agent ${agentName} tried to send a message but is not logged in`);
-                return;
-            }
-            console.log(`Sending message to ${agentName}: ${json.message}`);
-            agentSockets[agentName].emit('chat-message', "Administrator", json);
-            addAgentStatusLog(agentName, 'chat', 'success', 'Sent message to agent.');
-        });
-        
-        socket.on('send-message', (agentName, message) => {
-            if (!agentSockets[agentName]) {
-                console.warn(`Agent ${agentName} not logged in, cannot send message via Monitor Server.`);
-                return
-            }
-            try {
-                console.log(`Sending message to agent ${agentName}: ${message}`);
-                agentSockets[agentName].emit('send-message', agentName, message);
-                addAgentStatusLog(agentName, 'chat', 'success', 'Sent message to agent.');
-            } catch (error) {
-                console.error('Error: ', error);
-            }
+           logoutAgent(agentName); 
         });
 
         socket.on('status-response', (requestId, status) => {
@@ -879,46 +844,6 @@ export function createMonitorServer(port = 8080) {
                     addAgentStatusLog(status.name, 'chat', 'error', 'Received null status.');
                 }
             }
-        });
-
-        socket.on('restart-agent', (agentName) => {
-            console.log(`Restarting agent: ${agentName}`);
-            agentManagers[agentName].emit('restart-agent');
-        });
-
-        socket.on('stop-agent', (agentName) => {
-            let manager = agentManagers[agentName];
-            if (manager) {
-                manager.emit('stop-agent', agentName);
-            }
-            else {
-                console.warn(`Stopping unregisterd agent ${agentName}`);
-            }
-        });
-
-        socket.on('start-agent', (agentName) => {
-            let manager = agentManagers[agentName];
-            if (manager) {
-                manager.emit('start-agent', agentName);
-            }
-            else {
-                console.warn(`Starting unregisterd agent ${agentName}`);
-            }
-        });
-
-        socket.on('stop-all-agents', () => {
-            console.log('Killing all agents');
-            stopAllAgents();
-        });
-
-        socket.on('shutdown', () => {
-            console.log('Shutting down');
-            for (let manager of Object.values(agentManagers)) {
-                manager.emit('shutdown');
-            }
-            setTimeout(() => {
-                process.exit(0);
-            }, 2000);
         });
     });
 
@@ -1122,6 +1047,24 @@ function keysUpdate(socket) {
         "OPENAI_API_KEY" : getKey("OPENAI_API_KEY"),
     };
     socket.emit('keys-update', keys);
+}
+
+function logoutAgent(agentName) {
+    if (agentSockets[agentName]) {
+        delete agentSockets[agentName];
+        
+        // Update agent status in database
+        const agent = agentDatabase.get(agentName);
+        if (agent) {
+            agent.status = 'offline';
+        }
+        
+        broadcastAgentsUpdate();
+        broadcastSystemStatus();
+        
+        // Add status log
+        addAgentStatusLog(agentName, 'logout', 'info', 'Agent logged out');
+    }
 }
 
 function stopAllAgents() {
