@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cors_proxy from 'cors-anywhere';
 import cors from 'cors';
-
+import FormData from 'form-data';
 
 // Module-level variables
 let io;
@@ -16,26 +16,11 @@ const registeredAgents = new Set();
 const agentManagers = {}; // socket for main process that registers/controls agents
 const agentSockets = {}; 
 const agentMessages = new Map(); // Store messages sent to agents
-const actionLogs = []; // Store action logs for frontend
 const agentStatusLogs = []; // Store status change logs
 const pendingStatusRequests = new Map(); // Add this line for status requests
 
 // New data structures for API functionality
 const agentDatabase = new Map(); // Store detailed agent information
-const taskDatabase = new Map(); // Store task information
-const eventLog = []; // Store system events
-const systemConfig = {
-    maxAgents: 10,
-    taskQueueLimit: 100,
-    heartbeatInterval: 30,
-    autoRestartAgents: true,
-    safetyMode: true,
-    allowedBlocks: {
-        canBreak: ["stone", "dirt", "wood", "ore"],
-        canPlace: ["cobblestone", "wood_planks", "glass"]
-    },
-    restrictedAreas: []
-};
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -77,8 +62,8 @@ export function createMonitorServer(port = 8080) {
         allowedHeaders: ['Content-Type', 'Authorization']
     }));
 
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
+    app.use(express.json({ limit: '50mb' })); // Increase from default 100kb
+    app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
     // Serve static files
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -86,275 +71,24 @@ export function createMonitorServer(port = 8080) {
 
     // ==================== REST API ENDPOINTS ====================
 
-    app.put('/api/agents/:agentId/heartbeat', (req, res) => {
+    app.post('/api/monitor_query', async (req, res) => {
         try {
-            const agentId = parseInt(req.params.agentId);
-            const heartbeatData = req.body;
-            
-            // Find agent by ID
-            const agent = Array.from(agentDatabase.values()).find(a => a.id === agentId);
-            if (!agent) {
-                return res.status(404).json({
-                    success: false,
-                    error: "AGENT_NOT_FOUND",
-                    message: "Agent not found"
-                });
-            }
-
-            // Update agent data with heartbeat information
-            agent.lastHeartbeat = new Date().toISOString();
-            agent.status = "online";
-            agent.currentState = heartbeatData;
-
-            // TODO: Implement command queue system
-            const commands = []; // Placeholder for commands to send back to agent
-
+            const { query } = req.body;
+            const text = await processMonitorQuery(query);
             res.json({
                 success: true,
                 data: {
-                    acknowledged: true,
-                    nextHeartbeat: new Date(Date.now() + systemConfig.heartbeatInterval * 1000).toISOString(),
-                    commands
+                    actions: [],
+                    status: 'success',
+                    message: text,
                 }
             });
-
         } catch (error) {
-            console.error('Error processing heartbeat:', error);
+            console.error('Error processing monitor query:', error);
             res.status(500).json({
                 success: false,
                 error: "INTERNAL_ERROR",
-                message: "Failed to process heartbeat"
-            });
-        }
-    });
-
-    // 9.1 Agent Event Notification
-    app.post('/api/events/agent', (req, res) => {
-        try {
-            const { agentId, eventType, data, timestamp } = req.body;
-            
-            // Validate input
-            if (!agentId || !eventType) {
-                return res.status(400).json({
-                    success: false,
-                    error: "INVALID_INPUT",
-                    message: "AgentId and eventType are required"
-                });
-            }
-
-            // Store event
-            const event = {
-                id: Date.now(),
-                agentId,
-                eventType,
-                data,
-                timestamp: timestamp || new Date().toISOString()
-            };
-            
-            eventLog.push(event);
-            
-            // Keep only last 1000 events
-            if (eventLog.length > 1000) {
-                eventLog.shift();
-            }
-
-            // TODO: Implement event processing logic based on eventType
-            // Update agent stats, trigger alerts, etc.
-
-            // Broadcast event via WebSocket
-            io.emit('agent-event', event);
-
-            res.json({ success: true, message: "Event recorded" });
-
-        } catch (error) {
-            console.error('Error processing agent event:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to process event"
-            });
-        }
-    });
-
-    // 9.2 System Event Broadcast
-    app.post('/api/events/system', (req, res) => {
-        try {
-            const { eventType, severity, message, affectedAgents, data, timestamp } = req.body;
-            
-            const event = {
-                id: Date.now(),
-                type: 'system',
-                eventType,
-                severity: severity || 'info',
-                message,
-                affectedAgents: affectedAgents || [],
-                data,
-                timestamp: timestamp || new Date().toISOString()
-            };
-            
-            eventLog.push(event);
-            
-            // Broadcast system event
-            io.emit('system-event', event);
-
-            res.json({ success: true, message: "System event broadcasted" });
-
-        } catch (error) {
-            console.error('Error broadcasting system event:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to broadcast event"
-            });
-        }
-    });
-
-    // 10.1 Create Task
-    app.post('/api/tasks', (req, res) => {
-        try {
-            const { name, type, priority, assignedAgent, parameters, timeout, retryLimit } = req.body;
-            
-            // Validate input
-            if (!name || !type) {
-                return res.status(400).json({
-                    success: false,
-                    error: "INVALID_INPUT",
-                    message: "Task name and type are required"
-                });
-            }
-
-            // Check task queue limit
-            if (taskDatabase.size >= systemConfig.taskQueueLimit) {
-                return res.status(429).json({
-                    success: false,
-                    error: "TASK_QUEUE_FULL",
-                    message: "Task queue has reached maximum capacity"
-                });
-            }
-
-            // Create task
-            const taskId = `task_${Date.now()}`;
-            const task = {
-                id: taskId,
-                name,
-                type,
-                priority: priority || 'medium',
-                assignedAgent,
-                parameters: parameters || {},
-                timeout: timeout || 3600,
-                retryLimit: retryLimit || 3,
-                status: 'queued',
-                progress: 0,
-                createdAt: new Date().toISOString(),
-                startedAt: null,
-                completedAt: null,
-                results: {},
-                logs: []
-            };
-
-            taskDatabase.set(taskId, task);
-
-            // TODO: Implement task scheduling and assignment logic
-
-            res.json({
-                success: true,
-                data: {
-                    taskId,
-                    status: 'queued',
-                    estimatedDuration: "00:45:00", // TODO: Calculate based on task type
-                    queuePosition: taskDatabase.size,
-                    createdAt: task.createdAt
-                }
-            });
-
-        } catch (error) {
-            console.error('Error creating task:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to create task"
-            });
-        }
-    });
-
-    // 10.2 Get Task Status
-    app.get('/api/tasks/:taskId', (req, res) => {
-        try {
-            const taskId = req.params.taskId;
-            const task = taskDatabase.get(taskId);
-            
-            if (!task) {
-                return res.status(404).json({
-                    success: false,
-                    error: "TASK_NOT_FOUND",
-                    message: "Task not found"
-                });
-            }
-
-            // Get assigned agent info
-            let assignedAgentInfo = null;
-            if (task.assignedAgent) {
-                const agent = Array.from(agentDatabase.values()).find(a => a.id === task.assignedAgent);
-                if (agent) {
-                    assignedAgentInfo = { id: agent.id, name: agent.name };
-                }
-            }
-
-            res.json({
-                success: true,
-                data: {
-                    ...task,
-                    assignedAgent: assignedAgentInfo,
-                    estimatedCompletion: task.startedAt ? 
-                        new Date(new Date(task.startedAt).getTime() + task.timeout * 1000).toISOString() : 
-                        null
-                }
-            });
-
-        } catch (error) {
-            console.error('Error getting task status:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get task status"
-            });
-        }
-    });
-
-    // 10.3 Cancel Task
-    app.delete('/api/tasks/:taskId', (req, res) => {
-        try {
-            const taskId = req.params.taskId;
-            const task = taskDatabase.get(taskId);
-            
-            if (!task) {
-                return res.status(404).json({
-                    success: false,
-                    error: "TASK_NOT_FOUND",
-                    message: "Task not found"
-                });
-            }
-
-            // Update task status
-            task.status = 'cancelled';
-            task.completedAt = new Date().toISOString();
-
-            // TODO: Send cancellation signal to agent if task is executing
-
-            res.json({
-                success: true,
-                message: "Task cancelled successfully",
-                data: {
-                    partialResults: task.results
-                }
-            });
-
-        } catch (error) {
-            console.error('Error cancelling task:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to cancel task"
+                message: "Failed to process monitor query."
             });
         }
     });
@@ -540,210 +274,43 @@ export function createMonitorServer(port = 8080) {
         }
     });
 
-    app.get('/api/analytics/system', (req, res) => {
+    // Transcribe audio endpoint
+    // In monitor_server.js, update the transcribe endpoint
+    app.post('/api/transcribe', async (req, res) => {
         try {
-            const { period = 'day' } = req.query;
+            const { audio } = req.body;
             
-            // TODO: Implement actual system analytics calculation
-            const mockAnalytics = {
-                period,
-                totalAgents: registeredAgents.size,
-                averageUptime: "22:30:15",
-                totalTasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats.tasksCompleted || 0), 0),
-                systemEfficiency: 0.89,
-                resourcesGathered: {
-                    wood: 1500,
-                    stone: 2800,
-                    iron_ore: 350,
-                    diamond: 15
-                },
-                structuresBuilt: {
-                    houses: 3,
-                    bridges: 1,
-                    farms: 2
-                },
-                agentPerformance: Array.from(agentDatabase.values()).map(agent => ({
-                    agentId: agent.id,
-                    name: agent.name,
-                    efficiency: 0.95, // TODO: Calculate actual efficiency
-                    tasksCompleted: agent.stats.tasksCompleted || 0
-                }))
-            };
-
-            res.json({
-                success: true,
-                data: mockAnalytics
-            });
-
-        } catch (error) {
-            console.error('Error getting system analytics:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get system analytics"
-            });
-        }
-    });
-
-    app.get('/api/config', (req, res) => {
-        res.json({
-            success: true,
-            data: systemConfig
-        });
-    });
-
-    app.put('/api/config', (req, res) => {
-        try {
-            const updates = req.body;
-            
-            // Merge updates with existing config
-            Object.assign(systemConfig, updates);
-            
-            res.json({
-                success: true,
-                message: "Configuration updated successfully",
-                data: systemConfig
-            });
-
-        } catch (error) {
-            console.error('Error updating configuration:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to update configuration"
-            });
-        }
-    });
-
-    // Get all tasks
-    app.get('/api/tasks', (req, res) => {
-        try {
-            const tasks = Array.from(taskDatabase.values());
-            res.json({
-                success: true,
-                data: tasks
-            });
-        } catch (error) {
-            console.error('Error getting tasks:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get tasks"
-            });
-        }
-    });
-
-    // Get events
-    app.get('/api/events', (req, res) => {
-        try {
-            const { limit = 100, type } = req.query;
-            let events = eventLog;
-            
-            if (type) {
-                events = events.filter(event => event.eventType === type);
+            if (!audio) {
+                return res.status(400).json({
+                    success: false,
+                    error: "MISSING_AUDIO",
+                    message: "Audio data is required"
+                });
             }
-            
-            events = events.slice(-limit);
-            
-            res.json({
-                success: true,
-                data: events
-            });
-        } catch (error) {
-            console.error('Error getting events:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get events"
-            });
-        }
-    });
 
-    app.get('/api/system/status', (req, res) => {
-        try {
-            const systemStatus = {
-                totalAgents: registeredAgents.size,
-                activeAgents: Object.keys(inGameAgents).length,
-                serverStatus: 'Connected',
-                uptime: process.uptime() ? formatUptime(process.uptime()) : '0:00:00',
-                memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
-                tasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats?.tasksCompleted || 0), 0)
-            };
+            // Check audio size (base64 encoded)
+            const audioSizeKB = (audio.length * 3/4) / 1024; // Approximate decoded size
+            if (audioSizeKB > 20000) { // 20MB limit
+                return res.status(413).json({
+                    success: false,
+                    error: "AUDIO_TOO_LARGE",
+                    message: "Audio file too large. Please try shorter recordings."
+                });
+            }
 
-            res.json({
-                success: true,
-                data: systemStatus
-            });
-        } catch (error) {
-            console.error('Error getting system status:', error);
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get system status"
-            });
-        }
-    });
-
-    // Minecraft server info
-    app.get('/api/minecraft/server', (req, res) => {
-        try {
-            res.json({
-                success: true,
-                data: {
-                    serverStatus: 'online',
-                    playerCount: Object.keys(inGameAgents).length,
-                    maxPlayers: systemConfig.maxAgents,
-                    version: '1.20.1',
-                    motd: 'AI Agent Server'
-                }
-            });
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get server info"
-            });
-        }
-    });
-
-    // Action logs
-    app.get('/api/logs/actions', (req, res) => {
-        try {
-            const { limit = 50 } = req.query;
-            const logs = actionLogs.slice(0, parseInt(limit));
+            const transcript = await transcribeAudio(audio);
             
             res.json({
                 success: true,
-                data: {
-                    logs: logs
-                }
+                transcript: transcript
             });
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get action logs"
-            });
-        }
-    });
 
-    // Agent status logs  
-    app.get('/api/logs/agent-status', (req, res) => {
-        try {
-            const { limit = 50 } = req.query;
-            const logs = agentStatusLogs.slice(0, parseInt(limit));
-            
-            res.json({
-                success: true,
-                data: {
-                    logs: logs
-                }
-            });
         } catch (error) {
+            console.error('Error transcribing audio:', error);
             res.status(500).json({
                 success: false,
-                error: "INTERNAL_ERROR",
-                message: "Failed to get agent status logs"
+                error: "TRANSCRIPTION_ERROR",
+                message: error.message || "Failed to transcribe audio"
             });
         }
     });
@@ -800,7 +367,6 @@ export function createMonitorServer(port = 8080) {
             socket.emit('register-agents-success');
 
             broadcastAgentsUpdate();
-            broadcastSystemStatus();
         });
 
         socket.on('login-agent', (agentName) => {
@@ -819,7 +385,6 @@ export function createMonitorServer(port = 8080) {
                 }
                 
                 broadcastAgentsUpdate();
-                broadcastSystemStatus();
                 
                 // Add status log
                 addAgentStatusLog(agentName, 'login', 'success', 'Agent logged in successfully');
@@ -858,10 +423,8 @@ export function createMonitorServer(port = 8080) {
 function sendInitialData(socket) {
     sendAgentsData(socket);
     sendSystemStatus(socket);
-    sendActionLogs(socket, 50);
-    sendAgentStatusLogs(socket, 50);
-    sendTasksData(socket);
-    keysUpdate(socket);
+    // sendAgentStatusLogs(socket, 50);
+    // keysUpdate(socket);
 }
 
 // Helper function to format uptime
@@ -922,40 +485,10 @@ function sendCommand(agentName, command) {
     }
 } 
 
-function sendActionLogs(socket, limit = 50) {
-    const logs = actionLogs.slice(0, parseInt(limit));
-    socket.emit('action-logs', logs);
-}
-
-function sendAgentStatusLogs(socket, limit = 50) {
-    const logs = agentStatusLogs.slice(0, parseInt(limit));
-    socket.emit('agent-status-logs', logs);
-}
-
-function sendTasksData(socket) {
-    const tasks = Array.from(taskDatabase.values());
-    socket.emit('tasks-data', tasks);
-}
-
-function sendEventsData(socket, limit = 100, type = null) {
-    let events = eventLog;
-    
-    if (type) {
-        events = events.filter(event => event.eventType === type);
-    }
-    
-    events = events.slice(-limit);
-    socket.emit('events-data', events);
-}
-
 // Broadcast functions
 function broadcastAgentsUpdate() {
     io.emit('agents-update', getAgentsUpdateData());
     io.sockets.sockets.forEach(socket => sendAgentsData(socket));
-}
-
-function broadcastSystemStatus() {
-    io.sockets.sockets.forEach(socket => sendSystemStatus(socket));
 }
 
 function addAgentStatusLog(agentName, event, type, message, data = null) {
@@ -1037,16 +570,157 @@ function getAgentsUpdateData() {
     return agents;
 }
 
-function keysUpdate(socket) {
-    if (!socket) {
-        socket = io;
+async function processMonitorQuery(query) {
+    const prompt = `${query}`;
+    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+    const text = await response.text();
+    return text;
+}
+
+async function transcribeAudio(audioBase64) {
+    try {
+        let response;
+
+        if (settings.stt_service_provider === 'openai') {
+            if (hasKey('OPENAI_API_KEY')) {
+                // Convert base64 to blob for FormData
+                const audioBuffer = Buffer.from(audioBase64, 'base64');
+                const formData = new FormData();
+                formData.append('file', new Blob([audioBuffer], { type: 'audio/webm' }), 'audio.webm');
+                formData.append('model', 'whisper-1');
+                
+                try {
+                    response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${getKey("OPENAI_API_KEY")}`
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`OpenAI API request failed with status ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data.text;
+                } catch (openaiError) {
+                    console.log("Error calling STT service of OpenAI:", openaiError);
+                    throw new Error("Error calling STT service of OpenAI.");
+                }
+            } else {
+                throw new Error("OpenAI API key is not configured.");
+            }
+        } else if (settings.stt_service_provider === 'bytedance') {
+            if (!hasKey('BYTEDANCE_APP_ID') || !hasKey('BYTEDANCE_APP_TOKEN')) {
+                throw new Error("ByteDance API credentials are not configured.");
+            }
+
+            const requestId = generateId(); // Use your existing generateId function
+            
+            // Step 1: Submit the transcription request
+            const submitResponse = await fetch(`https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-App-Key': getKey("BYTEDANCE_APP_ID"),
+                    'X-Api-Access-Key': getKey("BYTEDANCE_APP_TOKEN"),
+                    'X-Api-Resource-Id': 'volc.bigasr.auc',
+                    'X-Api-Request-Id': requestId,
+                    'X-Api-Sequence': '-1'
+                },
+                body: JSON.stringify({
+                    "user": {
+                        "uid": "" 
+                    },
+                    "audio": {
+                        "format": "raw",
+                        "data": audioBase64, 
+                        "sample_rate": 16000, // Default sample rate
+                        "channel_num": 1, 
+                        "bits_per_sample": 16
+                    },
+                    "request": {
+                        "model_name": "bigmodel",
+                        "enable_itn": true
+                    }
+                })
+            });
+            
+            const submitStatusCode = submitResponse.headers.get('X-Api-Status-Code');
+            const submitMessage = submitResponse.headers.get('X-Api-Message');
+            
+            if (submitStatusCode === '20000000') {
+                // Step 2: Poll for the result
+                const taskResult = await pollByteDanceTaskResult(requestId);
+                
+                if (taskResult && taskResult.result && taskResult.result.text) {
+                    return taskResult.result.text;
+                } else if (taskResult && taskResult.error) {
+                    throw new Error(taskResult.error);
+                } else {
+                    throw new Error('No transcription result received');
+                }
+            } else if (submitStatusCode === '20000003') {
+                throw new Error("Detected audio without content. Please speak again.");
+            } else {
+                throw new Error(`ByteDance API Error: ${submitMessage} (${submitStatusCode})`);
+            }
+        } else {
+            throw new Error(`Unknown STT service provider: ${settings.stt_service_provider}`);
+        }
+    } catch (error) {
+        console.error('Transcription error:', error);
+        throw error;
     }
-    let keys = {
-        "BYTEDANCE_APP_ID" : getKey("BYTEDANCE_APP_ID"),
-        "BYTEDANCE_APP_TOKEN" : getKey("BYTEDANCE_APP_TOKEN"),
-        "OPENAI_API_KEY" : getKey("OPENAI_API_KEY"),
-    };
-    socket.emit('keys-update', keys);
+} 
+
+// Helper function to poll ByteDance task result
+async function pollByteDanceTaskResult(requestId, maxRetries = 10, retryInterval = 1000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(`https://openspeech.bytedance.com/api/v3/auc/bigmodel/query`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-App-Key': getKey("BYTEDANCE_APP_ID"),
+                    'X-Api-Access-Key': getKey("BYTEDANCE_APP_TOKEN"),
+                    'X-Api-Resource-Id': 'volc.bigasr.auc',
+                    'X-Api-Request-Id': requestId
+                },
+                body: JSON.stringify({})
+            });
+            
+            const statusCode = response.headers.get('X-Api-Status-Code');
+            const message = response.headers.get('X-Api-Message');
+            
+            if (statusCode === '20000000') {
+                const result = await response.json();
+                return result;
+            } else if (statusCode === '20000001' || statusCode === '20000002') {
+                console.log(`Processing, status code: ${statusCode}, continue querying...`);
+                await new Promise(resolve => setTimeout(resolve, retryInterval));
+                continue;
+            } else if (statusCode === '20000003') {
+                console.log('Detected audio without any content.');
+                return { error: 'Audio without any content.' };
+            } else if (statusCode === '55000031') {
+                console.log('STT server is busy.');
+                await new Promise(resolve => setTimeout(resolve, 2000)); 
+                continue;
+            } else {
+                throw new Error(`API Error: ${message} (${statusCode})`);
+            }
+        } catch (error) {
+            if (i === maxRetries - 1) {
+                throw error;
+            }
+            console.log(`Query attempt ${i + 1} failed, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, retryInterval));
+        }
+    }
+    
+    throw new Error('Max retries reached while polling for transcription result');
 }
 
 function logoutAgent(agentName) {
@@ -1060,18 +734,6 @@ function logoutAgent(agentName) {
         }
         
         broadcastAgentsUpdate();
-        broadcastSystemStatus();
-        
-        // Add status log
         addAgentStatusLog(agentName, 'logout', 'info', 'Agent logged out');
-    }
-}
-
-function stopAllAgents() {
-    for (const agentName in agentManagers) {
-        let manager = agentManagers[agentName];
-        if (manager) {
-            manager.emit('stop-agent', agentName);
-        }
     }
 }

@@ -36,7 +36,6 @@ export const queryList = [
             // light properties are bugged, they are not accurate
             res += '\n- ' + world.getSurroundingBlocks(bot).join('\n- ')
             res += `\n- First Solid Block Above Head: ${world.getFirstBlockAboveHead(bot, null, 32)}`;
-
             res += `\n- Date: this is the ${bot.time.day}-th day.`;
 
             if (bot.time.timeOfDay < 6000) {
@@ -52,7 +51,6 @@ export const queryList = [
             if (agent.isIdle())
                 action = 'Idle';
             res += `\n- Current Action: ${action}`;
-
 
             let players = world.getNearbyPlayerNames(bot);
             let bots = convoManager.getInGameAgents().filter(b => b !== agent.name);
