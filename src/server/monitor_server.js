@@ -26,6 +26,7 @@ const prompter = new Prompter();
 
 // New data structures for API functionality
 const agentDatabase = new Map(); // Store detailed agent information
+const cloudDatabase = new Map();
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -59,6 +60,8 @@ export function createMonitorServer(port = 8080) {
     server = http.createServer(app);
     io = new Server(server);
 
+    addCloudTable("globalInfo", "map", "Store the global informations.", new Map(Object.entries({"serverStartTime": new Date().toISOString()})));
+
     // Middleware
     app.use(cors({
         origin: [`http://localhost:${port}`],
@@ -75,6 +78,30 @@ export function createMonitorServer(port = 8080) {
     app.use(express.static(path.join(__dirname, 'public')));
 
     // ==================== REST API ENDPOINTS ====================
+        
+    app.get('/api/system_status', async (req, res) => {
+        try {
+            const now = new Date();
+            res.json({
+                success: true,
+                data: {
+                    totalAgents: registeredAgents.size,
+                    activeAgents: Object.keys(agentManagers).length,
+                    serverStatus: 'Connected',
+                    uptime: now.toLocaleTimeString('en-GB', { hour12: false }),
+                    memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+                    tasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats?.tasksCompleted || 0), 0)
+                }
+            });
+        } catch (error) {
+            console.error('Error reporting system status:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to report system status."
+            });
+        }
+    });
 
     app.post('/api/monitor_query', async (req, res) => {
         try {
@@ -83,7 +110,6 @@ export function createMonitorServer(port = 8080) {
             res.json({
                 success: true,
                 data: {
-                    actions: result.actions || [],
                     status: 'success',
                     message: result.text,
                 }
@@ -94,6 +120,40 @@ export function createMonitorServer(port = 8080) {
                 success: false,
                 error: "INTERNAL_ERROR",
                 message: "Failed to process monitor query."
+            });
+        }
+    });
+
+    app.get('/api/agents', (req, res) => {
+        try {
+            const now = new Date();
+            const agents = Array.from(agentDatabase.values()).map(agent => ({
+                id: agent.id,
+                name: agent.name,
+                status: agent.status,
+                lastHeartbeat: agent.lastHeartbeat,
+                currentTask: agent.currentTask,
+                registeredAt: agent.registeredAt,
+                health: agent.health || 20,
+                maxHealth: agent.maxHealth || 20,
+                hunger: agent.hunger || 20,
+                experience: agent.experience || 0,
+                gameMode: agent.gameMode || 'survival',
+                dimension: agent.dimension || 'overworld',
+                biome: agent.biome || 'plains',
+                coordinates: agent.coordinates || { x: 0, y: 64, z: 0 },
+                task: agent.currentTask || null,
+            }));
+            res.json({
+                success: true,
+                data: agents, 
+            });
+        } catch (error) {
+            console.error('Error reporting agents data:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get agents data."
             });
         }
     });
@@ -320,6 +380,114 @@ export function createMonitorServer(port = 8080) {
         }
     });
 
+    // Get list of all cloud tables
+    app.get('/api/cloud/tables', (req, res) => {
+        try {
+            const tables = listCloudTables();
+            
+            res.json({
+                success: true,
+                data: {
+                    tables: tables,
+                    totalTables: tables.length
+                }
+            });
+
+        } catch (error) {
+            console.error('Error getting cloud tables list:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get cloud tables list"
+            });
+        }
+    });
+
+    app.get('/api/cloud/tables/:tableName', (req, res) => {
+        try {
+            const tableName = req.params.tableName;
+            
+            if (!cloudTableExists(tableName)) {
+                return res.status(404).json({
+                    success: false,
+                    error: "TABLE_NOT_FOUND",
+                    message: `Table '${tableName}' not found`
+                });
+            }
+
+            const tableInfo = getCloudTableInfo(tableName);
+            const table = getCloudTable(tableName);
+            
+            res.json({
+                success: true,
+                data: {
+                    tableName: tableName,
+                    info: tableInfo,
+                    dataSize: table.info.type === 'list' ? table.data.length : table.data.size
+                }
+            });
+
+        } catch (error) {
+            console.error('Error getting cloud table info:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get cloud table info"
+            });
+        }
+    });
+
+    app.get('/api/cloud/tables/:tableName/data', (req, res) => {
+        try {
+            const tableName = req.params.tableName;
+            
+            if (!cloudTableExists(tableName)) {
+                return res.status(404).json({
+                    success: false,
+                    error: "TABLE_NOT_FOUND",
+                    message: `Table '${tableName}' not found`
+                });
+            }
+
+            const tableData = getCloudTableData(tableName);
+            const tableInfo = getCloudTableInfo(tableName);
+            
+            let serializedData;
+            if (tableInfo.type === 'map') {
+                // Check if tableData is actually a Map
+                if (tableData instanceof Map) {
+                    serializedData = Object.fromEntries(tableData);
+                } else if (typeof tableData === 'object' && tableData !== null) {
+                    // If it's already an object, use it as is
+                    serializedData = tableData;
+                } else {
+                    // Fallback to empty object
+                    serializedData = {};
+                }
+            } else {
+                // For list type, ensure it's an array
+                serializedData = Array.isArray(tableData) ? tableData : [];
+            }
+            
+            res.json({
+                success: true,
+                data: {
+                    tableName: tableName,
+                    type: tableInfo.type,
+                    data: serializedData
+                }
+            });
+
+        } catch (error) {
+            console.error('Error getting cloud table data:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to get cloud table data"
+            });
+        }
+    });
+
     // ==================== SOCKET.IO HANDLERS ====================
 
     // Socket.io connection handling
@@ -327,13 +495,10 @@ export function createMonitorServer(port = 8080) {
         let curAgentName = null;
         console.log('Client connected:', socket.id);
 
-        // Send initial data to newly connected client
-        sendInitialData(socket);
-
         // Handle agent registration (from agent processes)
         socket.on('register-agents', (agentNames) => {
             console.log(`Registering agents: ${agentNames}`);
-            agentNames.forEach(name => {
+            agentNames.forEach((name, index) => {
                 registeredAgents.add(name);
                 
                 // Create agent entry in database if not exists
@@ -370,11 +535,9 @@ export function createMonitorServer(port = 8080) {
             }
             
             socket.emit('register-agents-success');
-
-            broadcastAgentsUpdate();
         });
 
-        socket.on('login-agent', (agentName) => {
+        socket.on('login-agent', (agentName, count_id) => {
             if (agentSockets[agentName]) {
                 console.warn(`Agent ${agentName} already logged in.`);
                 return;
@@ -385,11 +548,10 @@ export function createMonitorServer(port = 8080) {
                 // Update agent status in database
                 const agent = agentDatabase.get(agentName);
                 if (agent) {
+                    agent.id = count_id;
                     agent.status = 'online';
                     agent.lastHeartbeat = new Date().toISOString();
                 }
-                
-                broadcastAgentsUpdate();
                 
                 // Add status log
                 addAgentStatusLog(agentName, 'login', 'success', 'Agent logged in successfully');
@@ -409,7 +571,7 @@ export function createMonitorServer(port = 8080) {
                 pendingStatusRequests.delete(requestId);
                 request.resolve(status); 
                 if (status) {
-                    addAgentStatusLog(status.name, 'status', 'success', 'Received update of agent status.');
+                    addAgentStatusLog(status.name, 'status', 'info', 'Received update of agent status.');
                 } else {
                     addAgentStatusLog(status.name, 'chat', 'error', 'Received null status.');
                 }
@@ -424,56 +586,12 @@ export function createMonitorServer(port = 8080) {
     return server;
 }
 
-// WebSocket data sender functions
-function sendInitialData(socket) {
-    sendAgentsData(socket);
-    sendSystemStatus(socket);
-    // sendAgentStatusLogs(socket, 50);
-    // keysUpdate(socket);
-}
-
 // Helper function to format uptime
 function formatUptime(seconds) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-function sendAgentsData(socket) {
-    const agents = Array.from(agentDatabase.values()).map(agent => ({
-        id: agent.id,
-        name: agent.name,
-        status: agent.status,
-        lastHeartbeat: agent.lastHeartbeat,
-        currentTask: agent.currentTask,
-        registeredAt: agent.registeredAt,
-        health: agent.health || 20,
-        maxHealth: agent.maxHealth || 20,
-        hunger: agent.hunger || 20,
-        experience: agent.experience || 0,
-        gameMode: agent.gameMode || 'survival',
-        dimension: agent.dimension || 'overworld',
-        biome: agent.biome || 'plains',
-        coordinates: agent.coordinates || { x: 0, y: 64, z: 0 },
-        task: agent.currentTask || null,
-    }));
-    
-    socket.emit('agents-update', agents);
-}
-
-function sendSystemStatus(socket) {
-    const now = new Date();
-    const systemStatus = {
-        totalAgents: registeredAgents.size,
-        activeAgents: Object.keys(agentManagers).length,
-        serverStatus: 'Connected',
-        uptime: now.toLocaleTimeString('en-GB', { hour12: false }),
-        memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
-        tasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats?.tasksCompleted || 0), 0)
-    };
-    
-    socket.emit('system-status', systemStatus);
 }
 
 function sendCommand(agentName, command) {
@@ -490,10 +608,21 @@ function sendCommand(agentName, command) {
     }
 } 
 
-// Broadcast functions
-function broadcastAgentsUpdate() {
-    io.emit('agents-update', getAgentsUpdateData());
-    io.sockets.sockets.forEach(socket => sendAgentsData(socket));
+function addActionLog(actionName, description, params, status) {
+    const logEntry = {
+        id: Date.now(),
+        name: actionName,
+        description: description,
+        params: params,
+        status: status,
+        timestamp: new Date().toLocaleTimeString()
+    };
+    actionLogs.unshift(logEntry);
+    if (actionLogs.length > 100) {
+        actionLogs.splice(100);
+    }
+    // Broadcast to all connected clients
+    io.emit('new-action-log', logEntry);
 }
 
 function addAgentStatusLog(agentName, event, type, message, data = null) {
@@ -576,7 +705,7 @@ function getAgentsUpdateData() {
 }
 
 async function processMonitorQuery(query) {
-    let result = {text : "", actions : []};
+    let result = {text : ""};
 
     result.text = await prompter.promptMonitorQuery([], query)
 
@@ -586,35 +715,18 @@ async function processMonitorQuery(query) {
     }
 
     if (data.actions && Array.isArray(data.actions)) {
-        let actionLogUpdate = [];
         data.actions.forEach(action => {
             executeAction(action);
-            actionLogUpdate.push({
-                name: action.name,
-                description : "The acition has been delivered.",
-                params: action.params || {},
-                status: "delivered",
-                timestamp: new Date().toLocaleTimeString(),
-            });
-        });
-        actionLogs.unshift(...actionLogUpdate);
-        result.actions = actionLogUpdate;
+            addActionLog(action.name, 'The action has been delivered.', 'action', 'delivered');
+        })
     }
     console.log("Result of monitor query processing:", result);
     return result;
 }
 
 async function executeAction(action) {
-    let actionLogUpdate = []
-    actionLogUpdate.push({ 
-        name: action.name,
-        description : "The acition has finished.",
-        params: action.params || {},
-        status: "finished",
-        timestamp: new Date().toLocaleTimeString(),
-    })
-    actionLogs.unshift(...actionLogUpdate);
-    io.emit('action-log-update', actionLogUpdate);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    addActionLog(action.name, 'The action has finished', 'action', 'finished');
 }
 
 async function transcribeAudio(audioBase64) {
@@ -773,7 +885,146 @@ function logoutAgent(agentName) {
             agent.status = 'offline';
         }
         
-        broadcastAgentsUpdate();
-        addAgentStatusLog(agentName, 'logout', 'info', 'Agent logged out');
+        addAgentStatusLog(agentName, 'logout', 'warning', 'Agent logged out');
     }
+}
+
+function addCloudTable(name, type, description, initialData = null) {
+    if (cloudDatabase.has(name)) {
+        console.warn(`Table ${name} already exists in cloud database`);
+        return false;
+    }
+
+    if (type !== 'list' && type !== 'map') {
+        console.error(`Invalid table type: ${type}. Must be 'list' or 'map'`);
+        return false;
+    }
+
+    const table = {
+        info: {
+            type: type,
+            name: name,
+            description: description,
+            createdAt: new Date().toISOString(),
+            lastModified: new Date().toISOString()
+        },
+        data: initialData || (type === 'list' ? [] : new Map())
+    };
+
+    cloudDatabase.set(name, table);
+    console.log(`Created cloud table: ${name} (${type})`);
+    return true;
+}
+
+function getCloudTable(tableName) {
+    const table = cloudDatabase.get(tableName);
+    if (!table) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return null;
+    }
+    return table;
+}
+
+function getCloudTableInfo(tableName) {
+    const table = cloudDatabase.get(tableName);
+    if (!table) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return null;
+    }
+    return table.info;
+}
+
+function getCloudTableData(tableName) {
+    const table = cloudDatabase.get(tableName);
+    if (!table) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return null;
+    }
+    return table.data;
+}
+
+function deleteCloudTable(tableName) {
+    if (!cloudDatabase.has(tableName)) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return false;
+    }
+
+    cloudDatabase.delete(tableName);
+    console.log(`Deleted cloud table: ${tableName}`);
+    return true;
+}
+
+function updateCloudTableInfo(tableName, infoUpdates) {
+    const table = cloudDatabase.get(tableName);
+    if (!table) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return false;
+    }
+
+    // Don't allow changing type or createdAt
+    const { type, createdAt, ...allowedUpdates } = infoUpdates;
+    
+    Object.assign(table.info, allowedUpdates);
+    table.info.lastModified = new Date().toISOString();
+    
+    console.log(`Updated cloud table info: ${tableName}`);
+    return true;
+}
+
+function replaceCloudTableData(tableName, newData) {
+    const table = cloudDatabase.get(tableName);
+    if (!table) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return false;
+    }
+
+    // Validate data type matches table type
+    const expectedType = table.info.type;
+    const isValidData = (expectedType === 'list' && Array.isArray(newData)) ||
+                       (expectedType === 'map' && newData instanceof Map);
+
+    if (!isValidData) {
+        console.error(`Data type mismatch for table ${tableName}. Expected ${expectedType}, got ${typeof newData}`);
+        return false;
+    }
+
+    table.data = newData;
+    table.info.lastModified = new Date().toISOString();
+    
+    console.log(`Replaced data for cloud table: ${tableName}`);
+    return true;
+}
+
+function listCloudTables() {
+    let tables = [];
+    for (const [tableName, table] of cloudDatabase.entries()) {
+        const tableEntry = {
+            ...table.info,
+            dataSize: table.info.type === 'list' ? table.data.length : table.data.size, 
+        }
+        tables.push(tableEntry);
+    }
+    return tables;
+}
+
+function cloudTableExists(tableName) {
+    return cloudDatabase.has(tableName);
+}
+
+function clearCloudTableData(tableName) {
+    const table = cloudDatabase.get(tableName);
+    if (!table) {
+        console.warn(`Table ${tableName} not found in cloud database`);
+        return false;
+    }
+
+    if (table.info.type === 'list') {
+        table.data.length = 0; // Clear array
+    } else {
+        table.data.clear(); // Clear map
+    }
+
+    table.info.lastModified = new Date().toISOString();
+    console.log(`Cleared data for cloud table: ${tableName}`);
+    return true;
 }

@@ -81,7 +81,7 @@ class AgentServerProxy {
     }
 
     login() {
-        this.socket.emit('login-agent', this.agent.name);
+        this.socket.emit('login-agent', this.agent.name, this.agent.count_id);
     }
 
     shutdown() {

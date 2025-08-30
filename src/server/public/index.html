@@ -12,7 +12,7 @@ const MinecraftAIManager = () => {
   const [activeTab, setActiveTab] = _react.useState.call(void 0, 'monitor');
 
   // Add these new state variables
-  const [apiConnected, setApiConnected] = _react.useState.call(void 0, false);
+  const [apiConnected, setApiConnected] = _react.useState.call(void 0, true);
   const [sttPorts, setSttPorts] = _react.useState.call(void 0, {});
 
   // Add socket ref
@@ -38,6 +38,13 @@ const MinecraftAIManager = () => {
   const [isProcessingAgent, setIsProcessingAgent] = _react.useState.call(void 0, false);
   const [isRefreshingStatus, setIsRefreshingStatus] = _react.useState.call(void 0, false);
   
+  // Cloud Database State
+  const [cloudTables, setCloudTables] = _react.useState.call(void 0, []);
+  const [selectedTable, setSelectedTable] = _react.useState.call(void 0, null);
+  const [selectedTableData, setSelectedTableData] = _react.useState.call(void 0, null);
+  const [isRefreshingTables, setIsRefreshingTables] = _react.useState.call(void 0, false);
+  const [isLoadingTableData, setIsLoadingTableData] = _react.useState.call(void 0, false);
+
   // Voice and General State
   const [isListening, setIsListening] = _react.useState.call(void 0, false);
   const [voiceStatus, setVoiceStatus] = _react.useState.call(void 0, 'Voice detection stopped');
@@ -99,6 +106,62 @@ const MinecraftAIManager = () => {
     }
   };
 
+  // Cloud Database API Functions
+  const getCloudTables = async () => {
+    try {
+      const response = await apiRequest('/cloud/tables', {
+        method: 'GET',
+      });
+      return response.success ? response.data : null;
+    } catch (error) {
+      console.error('Failed to get cloud tables:', error);
+      throw error;
+    }
+  };
+
+  const getCloudTableData = async (tableName) => {
+    try {
+      const response = await apiRequest(`/cloud/tables/${tableName}/data`, {
+        method: 'GET',
+      });
+      return response.success ? response.data : null;
+    } catch (error) {
+      console.error(`Failed to get table data for ${tableName}:`, error);
+      throw error;
+    }
+  };
+
+  // Cloud Database Functions
+  const refreshCloudTables = async () => {
+    setIsRefreshingTables(true);
+    try {
+      const tablesData = await getCloudTables();
+      if (tablesData) {
+        console.log("Cloud tables data:", tablesData);
+        setCloudTables(tablesData.tables || []);
+      }
+    } catch (error) {
+      console.error('Failed to refresh cloud tables:', error);
+      setCloudTables([]);
+    } finally {
+      setIsRefreshingTables(false);
+    }
+  };
+
+  const selectTable = async (table) => {
+    setSelectedTable(table);
+    setIsLoadingTableData(true);
+    try {
+      const tableData = await getCloudTableData(table.name);
+      setSelectedTableData(tableData);
+    } catch (error) {
+      console.error('Failed to load table data:', error);
+      setSelectedTableData(null);
+    } finally {
+      setIsLoadingTableData(false);
+    }
+  };
+
   // Agent Management API Functions
   
   const getAgentStatus = async (agentName) => {
@@ -127,13 +190,69 @@ const MinecraftAIManager = () => {
   };
 
   // Real-time Updates
+  
+  const getSystemStatus = async () => {
+    try {
+      const response = await apiRequest('/system_status', {
+        method: 'GET',
+      });
+      return response.success ? response.data : null;
+    } catch (error) {
+      console.error('Failed to get system status:', error);
+      throw error;
+    }
+  };
+  
+  const getAgentsData = async () => {
+    try {
+      const response = await apiRequest('/agents', {
+        method: 'GET',
+      });
+      return response.success ? response.data : null;
+    } catch (error) {
+      console.error('Failed to get agents data:', error);
+      throw error;
+    }
+  };
 
   const refreshAllData = async () => {
     setIsRefreshingStatus(true);
+
+    try {
+      const statusData = await getSystemStatus();
+      console.log("System status data:", statusData);
+      if (statusData) {
+        setApiConnected(true);
+        setGlobalStats(prev => ({
+          ...prev,  // Keep existing values
+          totalAgents: statusData.totalAgents || '-',
+          activeAgents: statusData.activeAgents || '-',
+          serverStatus: statusData.serverStatus || 'Connected',
+          uptime: statusData.uptime || '-',
+          memoryUsage: statusData.memoryUsage || '-',
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to refresh system status:', error);
+    }
     
-    // Request data via WebSocket instead of REST API
+    try {
+      const agentsData = await getAgentsData();
+      console.log("Agents data:", agentsData);
+      if (agentsData) {
+        setAgents(agentsData);
+      }
+    } catch (error) {
+      console.error('Failed to refresh agents data:', error);
+    }
+
+    await refreshCloudTables();
+
     setIsRefreshingStatus(false);
   };
+
+  _react.useEffect.call(void 0, () => {
+  }, [globalStats]);
 
   _react.useEffect.call(void 0, () => {
     if (messagesEndRef.current) {
@@ -146,8 +265,9 @@ const MinecraftAIManager = () => {
     const initializeData = async () => {
       console.log("Initializing data...");
       setIsInitializing(true);
-
+      
       try {
+
         // First attempt to load real data from API
         await refreshAllData();
         
@@ -256,48 +376,20 @@ const MinecraftAIManager = () => {
     });
     
     // Agent updates from WebSocket
-    socketRef.current.on('agents-update', (agentsData) => {
-      console.log('WebSocket agents update:', agentsData);
-      setAgents(agentsData);
-    });
-  
-    // Agent updates from WebSocket
-    socketRef.current.on('action-log-update', (actions) => {
-      actions.forEach((action, index) => {
-        setTimeout(() => {
-          const logEntry = {
-            id: Date.now() + index,
-            name: action.name,
-            description: action.description,
-            params: action.params,
-            status: action.status,
-            timestamp: action.timestamp,
-          };
-          setActionLog(prev => [logEntry, ...prev.slice(0, 49)]);
-        }, index * 500);
-      });
+    socketRef.current.on('new-action-log', (action) => {
+      setTimeout(() => {
+        const logEntry = {
+          id: action.id,
+          name: action.name,
+          description: action.description,
+          params: action.params,
+          status: action.status,
+          timestamp: action.timestamp,
+        };
+        setActionLog(prev => [logEntry, ...prev.slice(0, 49)]);
+      }, 500);
     });
     
-    socketRef.current.on('system-status', (statusData) => {
-        console.log('Received system status:', statusData);
-        setGlobalStats({
-            totalAgents: statusData.totalAgents || '-',
-            activeAgents: statusData.activeAgents || '-',
-            serverStatus: statusData.serverStatus || 'Unknown',
-            uptime: statusData.uptime || '-',
-            memoryUsage: statusData.memoryUsage || '-',
-        });
-        setApiConnected(true);
-        setMonitorChat([
-          { 
-            id: 1, 
-            type: 'bot', 
-            message: 'API connected. All agents are ready for monitoring and management.', 
-            timestamp: new Date().toLocaleTimeString(),
-          }
-        ]);
-    });
-
     socketRef.current.on('agent-status-logs', (logs) => {
         setAgentStatusLogs(logs);
     });
@@ -564,11 +656,6 @@ const MinecraftAIManager = () => {
       };
       
       setMonitorChat(prev => [...prev, botResponse]);
-      
-      // Execute actions and add to log
-      if (response.actions.length > 0) {
-        reportActions(response.actions);
-      }
     } catch (error) {
       console.error('Monitor query failed:', error);
       const errorResponse = {
@@ -583,23 +670,6 @@ const MinecraftAIManager = () => {
       setMonitorQuery('');
     }
   };
-
-  const reportActions = (actions) => {
-    actions.forEach((action, index) => {
-      setTimeout(() => {
-        const logEntry = {
-          id: Date.now() + index,
-          name: action.name,
-          description: action.description,
-          params: action.params,
-          status: action.status, 
-          timestamp: action.timestamp,
-        };
-        setActionLog(prev => [logEntry, ...prev.slice(0, 49)]);
-      }, index * 500);
-    });
-  };
-
 
   const getAgentMessages = async (agentName) => {
     try {
@@ -686,7 +756,6 @@ const MinecraftAIManager = () => {
         return 'text-red-400 bg-red-900/20 border-red-600';
       case 'warning':
         return 'text-yellow-400 bg-yellow-900/20 border-yellow-600';
-      case 'info':
       default:
         return 'text-blue-400 bg-blue-900/20 border-blue-600';
     }
@@ -765,6 +834,22 @@ const MinecraftAIManager = () => {
     } catch (error) {
       console.error(`Failed to stop agent ${agentName}:`, error);
       throw error;
+    }
+  };
+
+  const viewAgent = async (agentName) => {
+    const agent = agents.find(a => a.name === agentName);
+    if (agent) {
+      window.open(`http://localhost:${3000 + agent.id}`, '_blank');
+    } else {
+      const logEntry = {
+        id: Date.now(),
+        name: agentName,
+        type: 'error',
+        message: `Invalid name: ${agentName}.`,
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setAgentStatusLogs(prev => [logEntry, ...prev.slice(0, 49)]);
     }
   };
 
@@ -913,6 +998,17 @@ const MinecraftAIManager = () => {
             , _react2.default.createElement(_lucidereact.Users, { className: "w-4 h-4" ,} ), "Agent Management"
 
           )
+          , _react2.default.createElement('button', {
+            onClick: () => setActiveTab('cloud'),
+            className: `flex items-center gap-2 px-4 py-2 rounded-md smooth-transition custom-button ${
+              activeTab === 'cloud'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-gray-600'
+            }`,}
+
+            , _react2.default.createElement(_lucidereact.Database, { className: "w-4 h-4" ,} ), "Cloud Database"
+
+          )
         )
       )
 
@@ -1038,7 +1134,7 @@ const MinecraftAIManager = () => {
               )
             )
           )
-        ) : (
+        ) : activeTab === 'agents' ? (
           // Agent Management Tab
           _react2.default.createElement('div', { className: "grid grid-cols-3 gap-4 h-full"   ,}
             /* Left Column - Agent List */
@@ -1164,9 +1260,9 @@ const MinecraftAIManager = () => {
                           onClick: (e) => e.stopPropagation()
                         }, _react2.default.createElement(_react2.default.Fragment, null,
                             _react2.default.createElement('button', {
-                              onClick: () => stopAgent(agent.name),
-                              className: "px-2 py-1 text-xs bg-red-600 hover:bg-red-700 rounded smooth-transition custom-button"
-                            }, "Stop")
+                              onClick: () => viewAgent(selectedAgent.name),
+                              className: "px-2 py-1 text-xs bg-green-600 hover:bg-green-700 rounded smooth-transition custom-button"
+                            }, "View")
                           )
                         ) 
                       )
@@ -1327,6 +1423,150 @@ const MinecraftAIManager = () => {
                 ) : (
                   _react2.default.createElement('div', { className: "text-gray-400 text-center py-8 text-sm"   ,}
                     , apiConnected ? 'No status logs available. Click refresh to fetch updates.' : 'API disconnected - cannot fetch logs'
+                  )
+                )
+              )
+            )
+          )
+        ) : (
+          _react2.default.createElement('div', { className: "grid grid-cols-4 gap-4 h-full"   ,}
+            /* Left Column - Tables List */
+            , _react2.default.createElement('div', { className: "col-span-1 bg-gray-800 rounded-lg p-4 flex flex-col border border-gray-700 h-full overflow-hidden"        ,}
+              , _react2.default.createElement('div', { className: "flex items-center justify-between mb-3 flex-shrink-0"    ,}
+                , _react2.default.createElement('h2', { className: "text-lg font-semibold flex items-center gap-2"    ,}
+                  , _react2.default.createElement(_lucidereact.Database, { className: "text-cyan-400",} ), "Tables"
+
+                )
+                , _react2.default.createElement('div', { className: "flex items-center gap-2"  ,}
+                  , _react2.default.createElement('span', { className: "text-sm text-gray-400" ,}, cloudTables.length, " tables" )
+                  , _react2.default.createElement('button', {
+                    onClick: refreshCloudTables,
+                    disabled: isRefreshingTables,
+                    className: "p-2 text-gray-400 hover:text-cyan-400 smooth-transition custom-button rounded"     ,}
+
+                    , _react2.default.createElement(_lucidereact.RefreshCw, { className: `w-4 h-4 ${isRefreshingTables ? 'animate-spin' : ''}`,} )
+                  )
+                )
+              )
+
+              , _react2.default.createElement('div', { className: "flex-1 overflow-y-auto custom-scrollbar"  ,}
+                , cloudTables.length > 0 ? (
+                  _react2.default.createElement('div', { className: "space-y-3",}
+                    , cloudTables.map(table => (
+                      _react2.default.createElement('div', {
+                        key: table.name,
+                        onClick: () => selectTable(table),
+                        className: `p-3 rounded-lg cursor-pointer smooth-transition custom-button border ${
+                          _optionalChain([selectedTable, 'optionalAccess', _20 => _20.name]) === table.name
+                            ? 'bg-blue-600 border-blue-500 shadow-lg'
+                            : 'bg-gray-700 hover:bg-gray-600 border-gray-600 hover:border-gray-500'
+                        }`,}
+
+                        , _react2.default.createElement('div', { className: "flex items-center justify-between mb-2"   ,}
+                          , _react2.default.createElement('span', { className: "font-medium text-sm" ,}, table.name)
+                          , _react2.default.createElement('div', { className: `px-2 py-1 rounded text-xs font-medium ${
+                            table.type === 'list' ? 'bg-green-600 text-white' : 'bg-purple-600 text-white'
+                          }`,}
+                            , table.type
+                          )
+                        )
+                        
+                        , _react2.default.createElement('div', { className: "text-xs text-gray-300 mb-2" ,}
+                          , table.description
+                        )
+                        
+                        , _react2.default.createElement('div', { className: "text-xs text-gray-400 space-y-1"  ,}
+                          , _react2.default.createElement('div', null, "Table: " , table.name)
+                          , _react2.default.createElement('div', null, "Size: " , table.dataSize || 0, " items" )
+                          , _react2.default.createElement('div', null, "Created: " , new Date(table.createdAt).toLocaleDateString())
+                        )
+                      )
+                    ))
+                  )
+                ) : (
+                  _react2.default.createElement('div', { className: "text-gray-400 text-center py-8"  ,}
+                    , apiConnected ? (
+                      _react2.default.createElement('div', null
+                        , _react2.default.createElement(_lucidereact.Database, { className: "w-16 h-16 mx-auto mb-4 opacity-30"    ,} )
+                        , _react2.default.createElement('div', { className: "text-lg font-medium mb-2"  ,}, "No Tables Found"  )
+                        , _react2.default.createElement('div', { className: "text-sm",}, "No cloud database tables are available."       )
+                      )
+                    ) : (
+                      _react2.default.createElement('div', null
+                        , _react2.default.createElement(_lucidereact.WifiOff, { className: "w-16 h-16 mx-auto mb-4 opacity-30"    ,} )
+                        , _react2.default.createElement('div', { className: "text-lg font-medium mb-2"  ,}, "API Disconnected" )
+                        , _react2.default.createElement('div', { className: "text-sm",}, "Cannot load tables. Please check the backend connection."       )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+
+            /* Right Column - Table Data */
+            , _react2.default.createElement('div', { className: "col-span-3 bg-gray-800 rounded-lg p-4 flex flex-col border border-gray-700 h-full overflow-hidden"        ,}
+              , _react2.default.createElement('div', { className: "flex items-center justify-between mb-3 flex-shrink-0"    ,}
+                , _react2.default.createElement('h2', { className: "text-lg font-semibold flex items-center gap-2"    ,}
+                  , _react2.default.createElement(_lucidereact.Table, { className: "text-blue-400",} )
+                  , selectedTable ? `${selectedTable.name} Data` : 'Select a Table'
+                )
+                , selectedTable && (
+                  _react2.default.createElement('div', { className: "text-sm text-gray-400" ,}
+                    , selectedTableData && selectedTableData.data ? (
+                      selectedTable.type === 'list' 
+                        ? `${selectedTableData.data.length} items`
+                        : `${Object.keys(selectedTableData.data).length} entries`
+                    ) : '-'
+                  )
+                )
+              )
+
+              , _react2.default.createElement('div', { className: "flex-1 overflow-y-auto custom-scrollbar"  ,}
+                , isLoadingTableData ? (
+                  _react2.default.createElement('div', { className: "flex items-center justify-center h-full"   ,}
+                    , _react2.default.createElement('div', { className: "text-center",}
+                      , _react2.default.createElement('div', { className: "w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"        ,})
+                      , _react2.default.createElement('div', { className: "text-gray-400",}, "Loading table data..."   )
+                    )
+                  )
+                ) : selectedTableData ? (
+                  _react2.default.createElement('div', { className: "space-y-2",}
+                    , selectedTable.type === 'list' ? (
+                      // List type display
+                      selectedTableData.data.map((item, index) => (
+                        _react2.default.createElement('div', { key: index, className: "bg-gray-700 rounded-lg p-3 border border-gray-600"    ,}
+                          , _react2.default.createElement('div', { className: "flex items-start justify-between"   ,}
+                            , _react2.default.createElement('span', { className: "text-sm text-gray-400 font-mono" ,}, "#" , index)
+                          )
+                          , _react2.default.createElement('div', { className: "text-sm text-gray-200 mt-1 font-mono bg-gray-800 rounded p-2 border border-gray-600"       ,}
+                            , typeof item === 'string' ? item : JSON.stringify(item, null, 2)
+                          )
+                        )
+                      ))
+                    ) : (
+                      // Map type display (key-value pairs)
+                      Object.entries(selectedTableData.data).map(([key, value]) => (
+                        _react2.default.createElement('div', { key: key, className: "bg-gray-700 rounded-lg p-3 border border-gray-600"    ,}
+                          , _react2.default.createElement('div', { className: "flex items-start justify-between mb-2"   ,}
+                            , _react2.default.createElement('span', { className: "text-sm font-medium text-blue-400" ,}, key)
+                          )
+                          , _react2.default.createElement('div', { className: "text-sm text-gray-200 font-mono bg-gray-800 rounded p-2 border border-gray-600"       ,}
+                            , typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+                          )
+                        )
+                      ))
+                    )
+                  )
+                ) : selectedTable ? (
+                  _react2.default.createElement('div', { className: "text-gray-400 text-center py-8"  ,}
+                    , _react2.default.createElement('div', { className: "text-lg font-medium mb-2"  ,}, "No Data Available"  )
+                    , _react2.default.createElement('div', { className: "text-sm",}, "This table appears to be empty or data could not be loaded."        )
+                  )
+                ) : (
+                  _react2.default.createElement('div', { className: "text-gray-400 text-center py-8"  ,}
+                    , _react2.default.createElement(_lucidereact.Table, { className: "w-16 h-16 mx-auto mb-4 opacity-30"    ,} )
+                    , _react2.default.createElement('div', { className: "text-lg font-medium mb-2"  ,}, "No Table Selected"  )
+                    , _react2.default.createElement('div', { className: "text-sm",}, "Select a table from the left panel to view its data."        )
                   )
                 )
               )
