@@ -159,7 +159,6 @@ const MinecraftAIManager = () => {
               type: 'bot', 
               message: 'System initialized successfully. All agents are ready for monitoring and management.', 
               timestamp: new Date().toLocaleTimeString(),
-              actions: []
             }
           ]);
         } else {
@@ -178,7 +177,6 @@ const MinecraftAIManager = () => {
               type: 'bot', 
               message: 'Backend API is not available. Please check the connection to the Minecraft server. The system is running in offline mode with limited functionality.', 
               timestamp: new Date().toLocaleTimeString(),
-              actions: []
             }
           ]);
 
@@ -262,6 +260,23 @@ const MinecraftAIManager = () => {
       console.log('WebSocket agents update:', agentsData);
       setAgents(agentsData);
     });
+  
+    // Agent updates from WebSocket
+    socketRef.current.on('action-log-update', (actions) => {
+      actions.forEach((action, index) => {
+        setTimeout(() => {
+          const logEntry = {
+            id: Date.now() + index,
+            name: action.name,
+            description: action.description,
+            params: action.params,
+            status: action.status,
+            timestamp: action.timestamp,
+          };
+          setActionLog(prev => [logEntry, ...prev.slice(0, 49)]);
+        }, index * 500);
+      });
+    });
     
     socketRef.current.on('system-status', (statusData) => {
         console.log('Received system status:', statusData);
@@ -279,7 +294,6 @@ const MinecraftAIManager = () => {
             type: 'bot', 
             message: 'API connected. All agents are ready for monitoring and management.', 
             timestamp: new Date().toLocaleTimeString(),
-            actions: []
           }
         ]);
     });
@@ -509,11 +523,11 @@ const MinecraftAIManager = () => {
     setTranscriptHistory(prev => [newEntry, ...prev.slice(0, 49)]);
   };
   
-  const sendMonitorQuery = async (monitorQuery) => {
+  const sendMonitorQuery = async (query) => {
     try {
-      const response = await apiRequest(`/`, {
+      const response = await apiRequest(`/monitor_query`, {
         method: 'POST',
-        body: JSON.stringify({ command })
+        body: JSON.stringify({ query })
       });
       return response.success ? response.data : null;
     } catch (error) {
@@ -545,16 +559,15 @@ const MinecraftAIManager = () => {
       const botResponse = {
         id: Date.now() + 1,
         type: 'bot',
-        message: textResponse,
+        message: response.message || 'No response from monitor.',
         timestamp: new Date().toLocaleTimeString(),
-        actions: response.actions || [],
       };
       
       setMonitorChat(prev => [...prev, botResponse]);
       
       // Execute actions and add to log
-      if (actions.length > 0) {
-        reportActions(actions);
+      if (response.actions.length > 0) {
+        reportActions(response.actions);
       }
     } catch (error) {
       console.error('Monitor query failed:', error);
@@ -563,7 +576,6 @@ const MinecraftAIManager = () => {
         type: 'bot',
         message: 'Sorry, I encountered an error processing your request. Please check your connection.',
         timestamp: new Date().toLocaleTimeString(),
-        actions: []
       };
       setMonitorChat(prev => [...prev, errorResponse]);
     } finally {
@@ -578,15 +590,16 @@ const MinecraftAIManager = () => {
         const logEntry = {
           id: Date.now() + index,
           name: action.name,
+          description: action.description,
           params: action.params,
-          status: apiConnected ? (Math.random() > 0.2 ? 'completed' : 'failed') : 'failed',
-          timestamp: new Date().toLocaleTimeString(),
-          duration: `${(Math.random() * 3 + 0.5).toFixed(1)}s`,
+          status: action.status, 
+          timestamp: action.timestamp,
         };
         setActionLog(prev => [logEntry, ...prev.slice(0, 49)]);
       }, index * 500);
     });
   };
+
 
   const getAgentMessages = async (agentName) => {
     try {
@@ -642,12 +655,12 @@ const MinecraftAIManager = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
+      case 'finished':
         return _react2.default.createElement(_lucidereact.CheckCircle, { className: "w-4 h-4 text-green-400"  ,} );
       case 'failed':
         return _react2.default.createElement(_lucidereact.XCircle, { className: "w-4 h-4 text-red-400"  ,} );
-      case 'running':
-        return _react2.default.createElement(_lucidereact.Clock, { className: "w-4 h-4 text-yellow-400 animate-spin"   ,} );
+      case 'delivered':
+        return _react2.default.createElement(_lucidereact.Clock, { className: "w-4 h-4 text-yellow-400"   ,} );
       default:
         return _react2.default.createElement(_lucidereact.AlertCircle, { className: "w-4 h-4 text-gray-400"  ,} );
     }
@@ -951,19 +964,6 @@ const MinecraftAIManager = () => {
                           : 'bg-gray-600 text-gray-100 border border-gray-500'
                       }`,}
                         , _react2.default.createElement('div', { className: "text-sm leading-relaxed" ,}, msg.message)
-                        , msg.actions && msg.actions.length > 0 && (
-                          _react2.default.createElement('div', { className: "mt-2 pt-2 border-t border-gray-500"   ,}
-                            , _react2.default.createElement('div', { className: "text-xs text-gray-300 mb-1"  ,}, "Actions:")
-                            , msg.actions.map((action, idx) => (
-                              _react2.default.createElement('div', { key: idx, className: "text-xs bg-gray-700 rounded px-2 py-1 mb-1 border border-gray-600"       ,}
-                                , _react2.default.createElement('span', { className: "font-mono text-blue-300" ,}, action.name)
-                                , _react2.default.createElement('span', { className: "text-gray-400 ml-2" ,}
-                                  , JSON.stringify(action.params)
-                                )
-                              )
-                            ))
-                          )
-                        )
                         , _react2.default.createElement('div', { className: "text-xs opacity-70 mt-1"  ,}, msg.timestamp)
                       )
                     )
@@ -1022,7 +1022,6 @@ const MinecraftAIManager = () => {
                         )
                         , _react2.default.createElement('div', { className: "text-xs text-gray-300 mb-1"  ,}, action.description)
                         , _react2.default.createElement('div', { className: "text-xs text-gray-400 space-y-1"  ,}
-                          , _react2.default.createElement('div', null, "Duration: " , action.duration)
                           , _react2.default.createElement('div', null, "Time: " , action.timestamp)
                           , _react2.default.createElement('div', { className: "font-mono bg-gray-800 rounded p-1 mt-1 text-xs border border-gray-600"       ,}
                             , JSON.stringify(action.params)
@@ -1152,10 +1151,24 @@ const MinecraftAIManager = () => {
                       , _react2.default.createElement('div', null, "Mode: " , _react2.default.createElement('span', { className: "text-purple-400",}, selectedAgent.gameMode || '-'))
                       , _react2.default.createElement('div', null, "Dimension: " , _react2.default.createElement('span', { className: "text-cyan-400",}, selectedAgent.dimension || '-'))
                     )
-                    , _react2.default.createElement('div', { className: "mt-2 pt-2 border-t border-gray-600"   ,}
-                      , _react2.default.createElement('div', { className: "text-xs text-gray-400 mb-1"  ,}, "Coordinates:")
-                      , _react2.default.createElement('div', { className: "text-xs font-mono text-blue-300"  ,}, "X: "
-                         , _optionalChain([selectedAgent, 'access', _14 => _14.coordinates, 'optionalAccess', _15 => _15.x]) || '-', ", Y: "  , _optionalChain([selectedAgent, 'access', _16 => _16.coordinates, 'optionalAccess', _17 => _17.y]) || '-', ", Z: "  , _optionalChain([selectedAgent, 'access', _18 => _18.coordinates, 'optionalAccess', _19 => _19.z]) || '-'
+                    , _react2.default.createElement('div', { className: "grid grid-cols-2 gap-3"   ,}
+                      , _react2.default.createElement('div', { className: "mt-2 pt-2 border-t border-gray-600"   ,}
+                        , _react2.default.createElement('div', { className: "text-xs text-gray-400 mb-1"  ,}, "Coordinates:")
+                        , _react2.default.createElement('div', { className: "text-xs font-mono text-blue-300"  ,}, "X: "
+                           , _optionalChain([selectedAgent, 'access', _14 => _14.coordinates, 'optionalAccess', _15 => _15.x]) || '-', ", Y: "  , _optionalChain([selectedAgent, 'access', _16 => _16.coordinates, 'optionalAccess', _17 => _17.y]) || '-', ", Z: "  , _optionalChain([selectedAgent, 'access', _18 => _18.coordinates, 'optionalAccess', _19 => _19.z]) || '-'
+                        )
+                      )
+                      , _react2.default.createElement('div', { className: "mt-2 pt-2 border-t border-gray-600"   ,}
+                        , _react2.default.createElement('div', { 
+                          className: "flex gap-1 mb-2",
+                          onClick: (e) => e.stopPropagation()
+                        }, _react2.default.createElement(_react2.default.Fragment, null,
+                            _react2.default.createElement('button', {
+                              onClick: () => stopAgent(agent.name),
+                              className: "px-2 py-1 text-xs bg-red-600 hover:bg-red-700 rounded smooth-transition custom-button"
+                            }, "Stop")
+                          )
+                        ) 
                       )
                     )
                   )

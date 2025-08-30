@@ -6,6 +6,8 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import cors_proxy from 'cors-anywhere';
+import { splitContentAndJSON } from '../utils/generation.js';
+import { Prompter } from './monitor_prompter.js';
 import cors from 'cors';
 import FormData from 'form-data';
 
@@ -18,6 +20,9 @@ const agentSockets = {};
 const agentMessages = new Map(); // Store messages sent to agents
 const agentStatusLogs = []; // Store status change logs
 const pendingStatusRequests = new Map(); // Add this line for status requests
+const actionLogs = []; // Store action logs
+
+const prompter = new Prompter();
 
 // New data structures for API functionality
 const agentDatabase = new Map(); // Store detailed agent information
@@ -74,13 +79,13 @@ export function createMonitorServer(port = 8080) {
     app.post('/api/monitor_query', async (req, res) => {
         try {
             const { query } = req.body;
-            const text = await processMonitorQuery(query);
+            const result = await processMonitorQuery(query);
             res.json({
                 success: true,
                 data: {
-                    actions: [],
+                    actions: result.actions || [],
                     status: 'success',
-                    message: text,
+                    message: result.text,
                 }
             });
         } catch (error) {
@@ -571,10 +576,45 @@ function getAgentsUpdateData() {
 }
 
 async function processMonitorQuery(query) {
-    const prompt = `${query}`;
-    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
-    const text = await response.text();
-    return text;
+    let result = {text : "", actions : []};
+
+    result.text = await prompter.promptMonitorQuery([], query)
+
+    let [content, data] = splitContentAndJSON(result.text);
+    if (data.text_response) {
+        result.text = data.text_response;
+    }
+
+    if (data.actions && Array.isArray(data.actions)) {
+        let actionLogUpdate = [];
+        data.actions.forEach(action => {
+            executeAction(action);
+            actionLogUpdate.push({
+                name: action.name,
+                description : "The acition has been delivered.",
+                params: action.params || {},
+                status: "delivered",
+                timestamp: new Date().toLocaleTimeString(),
+            });
+        });
+        actionLogs.unshift(...actionLogUpdate);
+        result.actions = actionLogUpdate;
+    }
+    console.log("Result of monitor query processing:", result);
+    return result;
+}
+
+async function executeAction(action) {
+    let actionLogUpdate = []
+    actionLogUpdate.push({ 
+        name: action.name,
+        description : "The acition has finished.",
+        params: action.params || {},
+        status: "finished",
+        timestamp: new Date().toLocaleTimeString(),
+    })
+    actionLogs.unshift(...actionLogUpdate);
+    io.emit('action-log-update', actionLogUpdate);
 }
 
 async function transcribeAudio(audioBase64) {

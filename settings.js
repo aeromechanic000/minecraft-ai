@@ -1,4 +1,4 @@
-const settings = {
+export const settings = {
     "minecraft_version": "1.21.1", // supports up to 1.21.1
     "host": "127.0.0.1", // or "localhost", "your.ip.address.here"
     "port": 55916,
@@ -9,6 +9,10 @@ const settings = {
     "monitor_server_host": "localhost",
     "monitor_server_port": 8080,
     "proxyserver_port": 8081,
+    "monitor_model" : {
+        "api" : "doubao",
+        "model": "doubao-1-5-pro-32k-250115"
+    },
     
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // survival.json, creative.json, god_mode.json
@@ -50,4 +54,5 @@ if (process.env.MONITOR_SERVER_PORT) {
 if (process.env.PROFILES && JSON.parse(process.env.PROFILES).length > 0) {
     settings.profiles = JSON.parse(process.env.PROFILES);
 }
+
 export default settings;
