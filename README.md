@@ -1,4 +1,4 @@
-# <img src="https://s2.loli.net/2025/04/18/RWaFJkY4gSDLViy.png" alt="Minecraft AI" width="36" height="36"> Minecraft AI : Toward Embodied Turing Test Through AI Characters 
+# <img src="https://s2.loli.net/2025/04/18/RWaFJkY4gSDLViy.png" alt="Minecraft AI" width="36" height="36"> Minecraft AI : Toward Embodied Turing Test
 
 Minecraft AI explores how AI Characters (AICs) can become creative, expressive, and socially responsive agents inside Minecraft. More than just NPCs, these agents can dance, sing, build, and chat—reacting to the world and to players with surprising depth and personality. By combining large language models with an open-ended sandbox environment, this project reimagines Minecraft as a playground for human–AI co-creation.
 

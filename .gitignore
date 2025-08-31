@@ -1,6 +1,7 @@
 ._*
 .env
 .fslckout
+.DS_Store
 run.sh
 key.json
 skins/*
