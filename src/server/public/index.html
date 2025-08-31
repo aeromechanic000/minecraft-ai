@@ -397,6 +397,29 @@ const MinecraftAIManager = () => {
     socketRef.current.on('new-agent-status-log', (logEntry) => {
         setAgentStatusLogs(prev => [logEntry, ...prev.slice(0, 49)]);
     });
+
+    socketRef.current.on('cloud-database-update', (updatedTable) => {
+      console.log('Cloud database update received:', updatedTable);
+      
+      // Update the table in the tables list
+      setCloudTables(prev => 
+        prev.map(table => 
+          table.name === updatedTable.info.name ? { ...table, ...updatedTable.info } : table
+        )
+      );
+      
+      // If the currently selected table was updated, refresh its data
+      if (selectedTable && updatedTable.name === selectedTable.name) {
+        if (updatedTable.info) {
+          setSelectedTable(prev => ({ ...prev, ...updatedTable.info }));
+
+        }
+        if (updatedTable.data) {
+          setSelectedTableData({ data: updatedTable.data });
+        }
+        // Update the selected table object as well
+      }
+    });
     
     // Cleanup on unmount
     return () => {

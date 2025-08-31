@@ -1,3 +1,4 @@
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
 import { Server } from 'socket.io';
 import { getKey, hasKey } from '../utils/keys.js';
 import settings from '../../settings.js';
@@ -17,19 +18,49 @@ let server;
 const registeredAgents = new Set();
 const agentManagers = {}; // socket for main process that registers/controls agents
 const agentSockets = {}; 
-const agentMessages = new Map(); // Store messages sent to agents
+const agentMessages = {}; // Store messages sent to agents
 const agentStatusLogs = []; // Store status change logs
-const pendingStatusRequests = new Map(); // Add this line for status requests
+const pendingStatusRequests = {}; // Add this line for status requests
 const actionLogs = []; // Store action logs
 
 const prompter = new Prompter();
 
 // New data structures for API functionality
-const agentDatabase = new Map(); // Store detailed agent information
-const cloudDatabase = new Map();
+const agentDatabase = {}; // Store detailed agent information
+const cloudDatabase = {};
+
+mkdirSync(`./data`, { recursive: true });
+const database_fp = `./data/cloud_database.json`;
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function saveCloudDatabase() {
+    try {
+        writeFileSync(database_fp, JSON.stringify(cloudDatabase, null, 2));
+        console.log('Saved cloud database to:', database_fp);
+    } catch (error) {
+        console.error('Failed to save cloud database:', error);
+        throw error;
+    }
+}
+
+function loadCloudDatabase() {
+    try {
+        if (!existsSync(database_fp)) {
+            console.log('No cloud database file found.');
+            return null;
+        }
+        const database = JSON.parse(readFileSync(database_fp, 'utf8'));
+        for (let name in database) {
+            cloudDatabase[name] = database[name];
+        }
+        console.log('Loaded cloud database.');
+    } catch (error) {
+        console.error('Failed to load cloud database:', error);
+        throw error;
+    }
 }
 
 export function createProxyServer(port = 8081, options = []) {
@@ -54,13 +85,21 @@ export function createProxyServer(port = 8081, options = []) {
 
 // Initialize the server
 
-
 export function createMonitorServer(port = 8080) {
     const app = express();
     server = http.createServer(app);
     io = new Server(server);
 
-    addCloudTable("globalInfo", "map", "Store the global informations.", new Map(Object.entries({"serverStartTime": new Date().toISOString()})));
+    if (settings.load_cloud_database) {
+        loadCloudDatabase();
+    }
+
+    if (cloudTableExists("GlobalInfo")) {
+        // update serverStartTime
+        cloudDatabase["GlobalInfo"].serverStartTime = new Date().toISOString();
+    } else {
+        addCloudTable("GlobalInfo", "dict", "Store the global informations.", {"serverStartTime": new Date().toISOString()});
+    }
 
     // Middleware
     app.use(cors({
@@ -90,7 +129,6 @@ export function createMonitorServer(port = 8080) {
                     serverStatus: 'Connected',
                     uptime: now.toLocaleTimeString('en-GB', { hour12: false }),
                     memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
-                    tasksCompleted: Array.from(agentDatabase.values()).reduce((sum, agent) => sum + (agent.stats?.tasksCompleted || 0), 0)
                 }
             });
         } catch (error) {
@@ -127,23 +165,27 @@ export function createMonitorServer(port = 8080) {
     app.get('/api/agents', (req, res) => {
         try {
             const now = new Date();
-            const agents = Array.from(agentDatabase.values()).map(agent => ({
-                id: agent.id,
-                name: agent.name,
-                status: agent.status,
-                lastHeartbeat: agent.lastHeartbeat,
-                currentTask: agent.currentTask,
-                registeredAt: agent.registeredAt,
-                health: agent.health || 20,
-                maxHealth: agent.maxHealth || 20,
-                hunger: agent.hunger || 20,
-                experience: agent.experience || 0,
-                gameMode: agent.gameMode || 'survival',
-                dimension: agent.dimension || 'overworld',
-                biome: agent.biome || 'plains',
-                coordinates: agent.coordinates || { x: 0, y: 64, z: 0 },
-                task: agent.currentTask || null,
-            }));
+            const agents = []
+            for (let name in agentDatabase) {
+                const agent = agentDatabase[name];
+                agents.push({
+                    id: agent.id,
+                    name: agent.name,
+                    status: agent.status,
+                    lastHeartbeat: agent.lastHeartbeat,
+                    currentTask: agent.currentTask,
+                    registeredAt: agent.registeredAt,
+                    health: agent.health || 20,
+                    maxHealth: agent.maxHealth || 20,
+                    hunger: agent.hunger || 20,
+                    experience: agent.experience || 0,
+                    gameMode: agent.gameMode || 'survival',
+                    dimension: agent.dimension || 'overworld',
+                    biome: agent.biome || 'plains',
+                    coordinates: agent.coordinates || { x: 0, y: 64, z: 0 },
+                    task: agent.currentTask || null,
+                })
+            };
             res.json({
                 success: true,
                 data: agents, 
@@ -182,7 +224,7 @@ export function createMonitorServer(port = 8080) {
             }
             manager.emit('stop-agent', agentName);
             
-            const agent = agentDatabase.get(agentName);
+            const agent = agentDatabase[agentName];
             if (agent) {
                 agent.status = 'stopping';
             }
@@ -217,7 +259,7 @@ export function createMonitorServer(port = 8080) {
             }
 
             manager.emit('start-agent', agentName);
-            const agent = agentDatabase.get(agentName);
+            const agent = agentDatabase[agentName];
             if (agent) {
                 agent.status = 'online';
             }
@@ -243,7 +285,7 @@ export function createMonitorServer(port = 8080) {
         try {
             const agentName = req.params.agentName;
             await updateAgentData(agentName);
-            const agent = Array.from(agentDatabase.values()).find(a => a.name === agentName);
+            const agent = agentDatabase;
             if (!agent) {
                 return res.status(404).json({
                     success: false,
@@ -272,7 +314,7 @@ export function createMonitorServer(port = 8080) {
 
             res.json({
                 success: true,
-                data: agentMessages.get(agentName) || [], 
+                data: agentMessages[agentName] || [], 
             });
 
         } catch (error) {
@@ -291,7 +333,7 @@ export function createMonitorServer(port = 8080) {
             const agentName = req.params.agentName;
             const { command } = req.body;
             
-            const agent = Array.from(agentDatabase.values()).find(a => a.name === agentName);
+            const agent = agentDatabase[agentName];
             if (!agent) {
                 return res.status(404).json({
                     success: false,
@@ -301,8 +343,8 @@ export function createMonitorServer(port = 8080) {
             }
 
             // Store the message
-            if (!agentMessages.has(agentName)) {
-                agentMessages.set(agentName, []);
+            if (! (agentName in agentMessages)) {
+                agentMessages[agentName] = [];
             }
             
             const message = {
@@ -313,11 +355,11 @@ export function createMonitorServer(port = 8080) {
                 status: 'delivered'
             };
             
-            agentMessages.get(agentName).unshift(message);
+            agentMessages[agentName].unshift(message);
             
             // Keep only last 50 messages
-            if (agentMessages.get(agentName).length > 50) {
-                agentMessages.get(agentName).splice(50);
+            if (agentMessages[agentName].length > 50) {
+                agentMessages[agentName].splice(50);
             }
 
             sendCommand(agentName, command);
@@ -403,6 +445,106 @@ export function createMonitorServer(port = 8080) {
         }
     });
 
+    app.post('/api/cloud/tables', (req, res) => {
+        try {
+            const { name, type, description, initialData } = req.body;
+            
+            // Validate required fields
+            if (!name) {
+                return res.status(400).json({
+                    success: false,
+                    error: "MISSING_NAME",
+                    message: "Table name is required"
+                });
+            }
+            
+            if (!type) {
+                return res.status(400).json({
+                    success: false,
+                    error: "MISSING_TYPE",
+                    message: "Table type is required"
+                });
+            }
+            
+            // Validate table type
+            if (type !== 'list' && type !== 'dict') {
+                return res.status(400).json({
+                    success: false,
+                    error: "INVALID_TYPE",
+                    message: "Table type must be 'list' or 'dict'"
+                });
+            }
+            
+            // Check if table already exists
+            if (cloudTableExists(name)) {
+                return res.status(409).json({
+                    success: false,
+                    error: "TABLE_EXISTS",
+                    message: `Table '${name}' already exists`
+                });
+            }
+            
+            // Validate initialData type if provided
+            if (initialData !== undefined) {
+                const isValidData = (type === 'list' && Array.isArray(initialData)) ||
+                                (type === 'dict' && typeof initialData === 'object' && !Array.isArray(initialData));
+                
+                if (!isValidData) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "INVALID_INITIAL_DATA",
+                        message: `Initial data type mismatch. Expected ${type === 'list' ? 'array' : 'object'}`
+                    });
+                }
+            }
+            
+            // Create the table
+            const success = addCloudTable(name, type, description || '', initialData);
+            
+            if (!success) {
+                return res.status(500).json({
+                    success: false,
+                    error: "CREATION_FAILED",
+                    message: "Failed to create table"
+                });
+            }
+            
+            // Get the created table info
+            const table = getCloudTable(name);
+            const tableInfo = {
+                name: name,
+                type: type,
+                description: description || '',
+                createdAt: table.info.createdAt,
+                lastModified: table.info.lastModified,
+                dataSize: type === 'list' ? table.data.length : Object.keys(table.data).length
+            };
+            
+            // Emit update to all connected clients
+            const updatedTable = {
+                data: table.data,
+                info: table.info,
+            };
+            io.emit('cloud-database-update', updatedTable);
+            
+            res.status(201).json({
+                success: true,
+                message: `Table '${name}' created successfully`,
+                data: {
+                    table: tableInfo
+                }
+            });
+
+        } catch (error) {
+            console.error('Error creating cloud table:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to create cloud table"
+            });
+        }
+    });
+
     app.get('/api/cloud/tables/:tableName', (req, res) => {
         try {
             const tableName = req.params.tableName;
@@ -421,9 +563,8 @@ export function createMonitorServer(port = 8080) {
             res.json({
                 success: true,
                 data: {
-                    tableName: tableName,
-                    info: tableInfo,
-                    dataSize: table.info.type === 'list' ? table.data.length : table.data.size
+                    ...tableInfo,
+                    dataSize: table.info.type === 'list' ? table.data.length : Object.keys(table.data).length,
                 }
             });
 
@@ -452,29 +593,12 @@ export function createMonitorServer(port = 8080) {
             const tableData = getCloudTableData(tableName);
             const tableInfo = getCloudTableInfo(tableName);
             
-            let serializedData;
-            if (tableInfo.type === 'map') {
-                // Check if tableData is actually a Map
-                if (tableData instanceof Map) {
-                    serializedData = Object.fromEntries(tableData);
-                } else if (typeof tableData === 'object' && tableData !== null) {
-                    // If it's already an object, use it as is
-                    serializedData = tableData;
-                } else {
-                    // Fallback to empty object
-                    serializedData = {};
-                }
-            } else {
-                // For list type, ensure it's an array
-                serializedData = Array.isArray(tableData) ? tableData : [];
-            }
-            
             res.json({
                 success: true,
                 data: {
                     tableName: tableName,
                     type: tableInfo.type,
-                    data: serializedData
+                    data: tableData,
                 }
             });
 
@@ -484,6 +608,148 @@ export function createMonitorServer(port = 8080) {
                 success: false,
                 error: "INTERNAL_ERROR",
                 message: "Failed to get cloud table data"
+            });
+        }
+    });
+
+    app.post('/api/cloud/tables/:tableName/data', (req, res) => {
+        try {
+            const tableName = req.params.tableName;
+            const { data, key } = req.body; // key is only used for dict type
+            
+            if (!cloudTableExists(tableName)) {
+                return res.status(404).json({
+                    success: false,
+                    error: "TABLE_NOT_FOUND",
+                    message: `Table '${tableName}' not found`
+                });
+            }
+
+            const table = getCloudTable(tableName);
+            const tableType = table.info.type;
+
+            if (tableType === 'list') {
+                // For list type, append data to array
+                table.data.push(data);
+            } else if (tableType === 'dict') {
+                // For dict type, need a key
+                if (!key) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "MISSING_KEY",
+                        message: "Key is required for dict type tables"
+                    });
+                }
+                table.data[key] = data;
+            }
+
+            table.info.lastModified = new Date().toISOString();
+            saveCloudDatabase();
+
+            // Emit update to all connected clients
+            const updatedTable = {
+                data: table.data,
+                info: table.info,
+            };
+            updatedTable.info.dataSize = (tableType === 'list' ? table.data.length : Object.keys(table.data).length);
+            io.emit('cloud-database-update', updatedTable);
+
+            res.json({
+                success: true,
+                message: `Data added to table '${tableName}'`,
+                data: {
+                    tableName: tableName,
+                    operation: 'add',
+                    dataSize: tableType === 'list' ? table.data.length : Object.keys(table.data).length
+                }
+            });
+
+        } catch (error) {
+            console.error('Error adding data to cloud table:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to add data to cloud table"
+            });
+        }
+    });
+
+    // Update/modify data in a cloud table
+    app.put('/api/cloud/tables/:tableName/data', (req, res) => {
+        try {
+            const tableName = req.params.tableName;
+            const { data, key, index } = req.body; // index for list type, key for dict type
+            
+            if (!cloudTableExists(tableName)) {
+                return res.status(404).json({
+                    success: false,
+                    error: "TABLE_NOT_FOUND",
+                    message: `Table '${tableName}' not found`
+                });
+            }
+
+            const table = getCloudTable(tableName);
+            const tableType = table.info.type;
+
+            if (tableType === 'list') {
+                // For list type, need an index
+                if (typeof index !== 'number') {
+                    return res.status(400).json({
+                        success: false,
+                        error: "MISSING_INDEX",
+                        message: "Index is required for list type tables"
+                    });
+                }
+                
+                if (index < 0 || index >= table.data.length) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "INVALID_INDEX",
+                        message: `Index ${index} is out of bounds for table with ${table.data.length} items`
+                    });
+                }
+                
+                table.data[index] = data;
+            } else if (tableType === 'dict') {
+                // For dict type, need a key
+                if (!key) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "MISSING_KEY",
+                        message: "Key is required for dict type tables"
+                    });
+                }
+                
+                table.data[key] = data;
+            }
+
+            table.info.lastModified = new Date().toISOString();
+            saveCloudDatabase();
+
+            // Emit update to all connected clients
+            const updatedTable = {
+                data: table.data,
+                info: table.info,
+            };
+            updatedTable.info.dataSize = (tableType === 'list' ? table.data.length : Object.keys(table.data).length);
+            io.emit('cloud-database-update', updatedTable);
+
+            res.json({
+                success: true,
+                message: `Data updated in table '${tableName}'`,
+                data: {
+                    tableName: tableName,
+                    operation: 'update',
+                    [tableType === 'list' ? 'index' : 'key']: tableType === 'list' ? index : key
+                }
+            });
+
+        } catch (error) {
+            console.error('Error updating data in cloud table:', error);
+            res.status(500).json({
+                success: false,
+                error: "INTERNAL_ERROR",
+                message: "Failed to update data in cloud table"
             });
         }
     });
@@ -502,7 +768,7 @@ export function createMonitorServer(port = 8080) {
                 registeredAgents.add(name);
                 
                 // Create agent entry in database if not exists
-                if (!agentDatabase.has(name)) {
+                if (! (name in agentDatabase)) {
                     const agentData = {
                         id: Date.now() + Math.random(),
                         name: name,
@@ -526,7 +792,7 @@ export function createMonitorServer(port = 8080) {
                             blocksBroken: 0
                         }
                     };
-                    agentDatabase.set(name, agentData);
+                    agentDatabase[name] = agentData;
                 }
             });
             
@@ -546,7 +812,7 @@ export function createMonitorServer(port = 8080) {
             if (registeredAgents.has(agentName)) {
                 agentSockets[agentName] = socket;
                 // Update agent status in database
-                const agent = agentDatabase.get(agentName);
+                const agent = agentDatabase[agentName];
                 if (agent) {
                     agent.id = count_id;
                     agent.status = 'online';
@@ -565,11 +831,11 @@ export function createMonitorServer(port = 8080) {
         });
 
         socket.on('status-response', (requestId, status) => {
-            const request = pendingStatusRequests.get(requestId);
+            const request = pendingStatusRequests[requestId];
             if (request) {
                 clearTimeout(request.timeout);
-                pendingStatusRequests.delete(requestId);
-                request.resolve(status); 
+                delete pendingStatusRequests[requestId];
+                request.resolve(status);
                 if (status) {
                     addAgentStatusLog(status.name, 'status', 'info', 'Received update of agent status.');
                 } else {
@@ -651,18 +917,18 @@ function requestAgentStatus(agentName) {
     return new Promise((resolve, reject) => {
         const requestId = generateId();
         const timeout = setTimeout(() => {
-            pendingStatusRequests.delete(requestId);
-            console.warn(`Request timeout for agent ${agentName}`); 
+            delete pendingStatusRequests[requestId];
+            console.warn(`Request timeout for agent ${agentName}`);
             resolve(null);
         }, 5000);
 
-        pendingStatusRequests.set(requestId, { resolve, reject, timeout });
+        pendingStatusRequests[requestId] = { resolve, reject, timeout };
         
         if (agentSockets[agentName]) {
             agentSockets[agentName].emit('request-status', requestId);
         } else {
             clearTimeout(timeout);
-            pendingStatusRequests.delete(requestId);
+            delete pendingStatusRequests[requestId];
             console.warn(`Agent ${agentName} not connected`);
             resolve(null); 
         }
@@ -672,10 +938,10 @@ function requestAgentStatus(agentName) {
 async function updateAgentData(agentName) {
     try {
         const status = await requestAgentStatus(agentName);
-        const agent = agentDatabase.get(agentName);
+        const agent = agentDatabase[agentName];
         if (agent) {
             Object.assign(agent, status);
-            agentDatabase.set(agentName, agent);
+            agentDatabase[agentName] = agent;
         }
     } catch (error) {
         console.error("Error updating agent data:", error);
@@ -693,7 +959,7 @@ function getAgentsUpdateData() {
     updateAgentDatabase();
     let agents = [];
     registeredAgents.forEach(name => {
-        const agentData = agentDatabase.get(name);
+        const agentData = agentDatabase[name];
         agents.push({
             name, 
             id: agentData?.id,
@@ -880,7 +1146,7 @@ function logoutAgent(agentName) {
         delete agentSockets[agentName];
         
         // Update agent status in database
-        const agent = agentDatabase.get(agentName);
+        const agent = agentDatabase[agentName];
         if (agent) {
             agent.status = 'offline';
         }
@@ -890,13 +1156,13 @@ function logoutAgent(agentName) {
 }
 
 function addCloudTable(name, type, description, initialData = null) {
-    if (cloudDatabase.has(name)) {
+    if (name in cloudDatabase) {
         console.warn(`Table ${name} already exists in cloud database`);
         return false;
     }
 
-    if (type !== 'list' && type !== 'map') {
-        console.error(`Invalid table type: ${type}. Must be 'list' or 'map'`);
+    if (type !== 'list' && type !== 'dict') {
+        console.error(`Invalid table type: ${type}. Must be 'list' or 'dict'`);
         return false;
     }
 
@@ -908,56 +1174,58 @@ function addCloudTable(name, type, description, initialData = null) {
             createdAt: new Date().toISOString(),
             lastModified: new Date().toISOString()
         },
-        data: initialData || (type === 'list' ? [] : new Map())
+        data: initialData || (type === 'list' ? [] : {})
     };
 
-    cloudDatabase.set(name, table);
+    cloudDatabase[name] = table;
     console.log(`Created cloud table: ${name} (${type})`);
+    saveCloudDatabase();
     return true;
 }
 
-function getCloudTable(tableName) {
-    const table = cloudDatabase.get(tableName);
+function getCloudTable(name) {
+    const table = cloudDatabase[name];
     if (!table) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+        console.warn(`Table ${name} not found in cloud database`);
         return null;
     }
     return table;
 }
 
-function getCloudTableInfo(tableName) {
-    const table = cloudDatabase.get(tableName);
+function getCloudTableInfo(name) {
+    const table = cloudDatabase[name];
     if (!table) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+        console.warn(`Table ${name} not found in cloud database`);
         return null;
     }
     return table.info;
 }
 
-function getCloudTableData(tableName) {
-    const table = cloudDatabase.get(tableName);
+function getCloudTableData(name) {
+    const table = cloudDatabase[name];
     if (!table) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+        console.warn(`Table ${name} not found in cloud database`);
         return null;
     }
     return table.data;
 }
 
-function deleteCloudTable(tableName) {
-    if (!cloudDatabase.has(tableName)) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+function deleteCloudTable(name) {
+    if (!cloudDatabase[name]) {
+        console.warn(`Table ${name} not found in cloud database`);
         return false;
     }
 
-    cloudDatabase.delete(tableName);
-    console.log(`Deleted cloud table: ${tableName}`);
+    delete(cloudDatabase[name]);
+    console.log(`Deleted cloud table: ${name}`);
+    saveCloudDatabase();
     return true;
 }
 
-function updateCloudTableInfo(tableName, infoUpdates) {
-    const table = cloudDatabase.get(tableName);
+function updateCloudTableInfo(name, infoUpdates) {
+    const table = cloudDatabase[name];
     if (!table) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+        console.warn(`Table ${name} not found in cloud database`);
         return false;
     }
 
@@ -967,14 +1235,15 @@ function updateCloudTableInfo(tableName, infoUpdates) {
     Object.assign(table.info, allowedUpdates);
     table.info.lastModified = new Date().toISOString();
     
-    console.log(`Updated cloud table info: ${tableName}`);
+    console.log(`Updated cloud table info: ${name}`);
+    saveCloudDatabase();
     return true;
 }
 
-function replaceCloudTableData(tableName, newData) {
-    const table = cloudDatabase.get(tableName);
+function replaceCloudTableData(name, newData) {
+    const table = cloudDatabase[name];
     if (!table) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+        console.warn(`Table ${name} not found in cloud database`);
         return false;
     }
 
@@ -984,47 +1253,50 @@ function replaceCloudTableData(tableName, newData) {
                        (expectedType === 'map' && newData instanceof Map);
 
     if (!isValidData) {
-        console.error(`Data type mismatch for table ${tableName}. Expected ${expectedType}, got ${typeof newData}`);
+        console.error(`Data type mismatch for table ${name}. Expected ${expectedType}, got ${typeof newData}`);
         return false;
     }
 
     table.data = newData;
     table.info.lastModified = new Date().toISOString();
     
-    console.log(`Replaced data for cloud table: ${tableName}`);
+    console.log(`Replaced data for cloud table: ${name}`);
+    saveCloudDatabase();
     return true;
 }
 
 function listCloudTables() {
     let tables = [];
-    for (const [tableName, table] of cloudDatabase.entries()) {
+    for (let name in cloudDatabase) {
+        const table = cloudDatabase[name];
         const tableEntry = {
             ...table.info,
-            dataSize: table.info.type === 'list' ? table.data.length : table.data.size, 
+            dataSize: table.info.type === 'list' ? table.data.length : Object.keys(table.data).length, 
         }
         tables.push(tableEntry);
     }
     return tables;
 }
 
-function cloudTableExists(tableName) {
-    return cloudDatabase.has(tableName);
+function cloudTableExists(name) {
+    return name in cloudDatabase;
 }
 
-function clearCloudTableData(tableName) {
-    const table = cloudDatabase.get(tableName);
+function clearCloudTableData(name) {
+    const table = cloudDatabase[name];
     if (!table) {
-        console.warn(`Table ${tableName} not found in cloud database`);
+        console.warn(`Table ${name} not found in cloud database`);
         return false;
     }
 
     if (table.info.type === 'list') {
-        table.data.length = 0; // Clear array
+        table.data = []; // Clear array
     } else {
-        table.data.clear(); // Clear map
+        table.data = {}; // Clear map
     }
 
     table.info.lastModified = new Date().toISOString();
-    console.log(`Cleared data for cloud table: ${tableName}`);
+    console.log(`Cleared data for cloud table: ${name}`);
+    saveCloudDatabase();
     return true;
 }

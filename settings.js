@@ -8,6 +8,7 @@ export const settings = {
     "host_monitor_server": true, // if true, the monitor_server will be hosted on this machine. otherwise, specify a public IP address
     "monitor_server_host": "localhost",
     "monitor_server_port": 8080,
+    "load_cloud_database": true, 
     "proxyserver_port": 8081,
     "monitor_model" : {
         "api" : "doubao",
@@ -41,7 +42,7 @@ export const settings = {
     "narrate_behavior": true, // chat simple automatic actions ('Picking up item!')
     "chat_bot_messages": true, // publicly chat messages to other bots
     "stt_service_provider": "bytedance", // "openai" or "bytedance"
-    "plugins" : ["Dance"], // plugin will be loaded if and only if it's name appears here
+    "plugins" : ["CloudKnowledge"], // plugin will be loaded if and only if it's name appears here
 }
 
 // these environment variables override certain settings
