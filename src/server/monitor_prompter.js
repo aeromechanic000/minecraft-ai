@@ -2,6 +2,7 @@ import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'fs';
 import { Examples } from '../utils/examples.js';
 import { settings } from '../../settings.js';
 import { prompts } from './monitor_profile.js';
+import { getCommandDocs } from './monitor_commands.js';
 import { Gemini } from '../models/gemini.js';
 import { GPT } from '../models/gpt.js';
 import { Claude } from '../models/claude.js';
@@ -163,7 +164,7 @@ export class Prompter {
             prompt = prompt.replaceAll('$QUERY', `## User Query:\n${query}\n`);
 
         if (prompt.includes('$COMMAND_DOCS'))
-            prompt = prompt.replaceAll('$COMMAND_DOCS', "");
+            prompt = prompt.replaceAll('$COMMAND_DOCS', `## Available Commands: \n${getCommandDocs()}`);
 
         if (prompt.includes('$EXAMPLES'))
             prompt = prompt.replaceAll('$EXAMPLES', "");

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import cors_proxy from 'cors-anywhere';
 import { splitContentAndJSON } from '../utils/generation.js';
 import { Prompter } from './monitor_prompter.js';
+import { commands } from './monitor_commands.js';
 import cors from 'cors';
 import FormData from 'form-data';
 
@@ -22,6 +23,7 @@ const agentMessages = {}; // Store messages sent to agents
 const agentStatusLogs = []; // Store status change logs
 const pendingStatusRequests = {}; // Add this line for status requests
 const actionLogs = []; // Store action logs
+const monitorMessages = [];
 
 const prompter = new Prompter();
 
@@ -970,29 +972,66 @@ function getAgentsUpdateData() {
     return agents;
 }
 
+function addMonitorMessage(message) { 
+    monitorMessages.push(message)
+    if (monitorMessages.length > settings.max_monitor_messages) {
+        monitorMessages.splice(0, monitorMessages.length - settings.max_monitor_messages);
+    }
+}
+
 async function processMonitorQuery(query) {
     let result = {text : ""};
 
-    result.text = await prompter.promptMonitorQuery([], query)
+    addMonitorMessage({"role" : "user", "content" : query}) 
+
+    result.text = await prompter.promptMonitorQuery(monitorMessages, query)
 
     let [content, data] = splitContentAndJSON(result.text);
     if (data.text_response) {
         result.text = data.text_response;
     }
 
+    let message = {"role" : "assistant", "content" : result.text}
+
     if (data.actions && Array.isArray(data.actions)) {
+        message.content += ` Perform actions: ${JSON.stringify(data.actinos)}`
         data.actions.forEach(action => {
-            executeAction(action);
-            addActionLog(action.name, 'The action has been delivered.', 'action', 'delivered');
+            const command = commands.find(c => c.name === action.name);
+            if (command) {
+                executeAction(action);
+                addActionLog(action.name, 'Action delivered.', JSON.stringify(action.params), 'delivered');
+            } else {
+                addActionLog(action.name, 'Cannot find the action.', JSON.stringify(action.params), 'warning');
+            }
         })
     }
+    addMonitorMessage(message);
     console.log("Result of monitor query processing:", result);
     return result;
 }
 
 async function executeAction(action) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    addActionLog(action.name, 'The action has finished', 'action', 'finished');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+        const command = commands.find(c => c.name === action.name);
+        let args = {};
+        for (let key in command.params || {}) {
+            if (key in action.params) {
+                args[key] = action.params[key];
+            } else {
+                args[key] = null;
+            }
+        } 
+        if (Object.keys(args) > 0) {
+            await command.perform(agentSockets, ...args);
+        } else {
+            await command.perform(agentSockets);
+        }
+        addActionLog(action.name, 'Action finished.', JSON.stringify(action.params), 'finished');
+    } catch (error) {
+        console.log(`Error in executiong ${action.name} with arguments ${action.params}: ${error}`);
+        addActionLog(action.name, "Error in executing the action.", JSON.stringify(action.params), 'error');
+    }
 }
 
 async function transcribeAudio(audioBase64) {
