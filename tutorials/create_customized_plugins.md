@@ -10,14 +10,15 @@ In this tutorial, you’ll learn how to create a plugin and enable it in your ga
 
 ## Plugin Structure
 
-Each plugin should be placed in its own directory under `src/`. The directory name will be used as the plugin name. Inside the plugin folder, only a `main.js` file is required.
+Each plugin should be placed in its own directory under `src/plugins`. The directory name will be used as the plugin name. Inside the plugin folder, only a `main.js` file is required.
 
 For example, the structure of a simple plugin called `Dance` looks like this:
 
 ```
 src
-└─ Dance
-   └─ main.js
+└─ plugins
+    └─ Dance
+        └─ main.js
 ```
 
 In `main.js`, you must define and export a class named `PluginInstance`, which contains the functionality of your plugin.

@@ -8,7 +8,7 @@ export const settings = {
     "host_monitor_server": true, // if true, the monitor_server will be hosted on this machine. otherwise, specify a public IP address
     "monitor_server_host": "localhost",
     "monitor_server_port": 8080,
-    "load_cloud_database": true, 
+    "load_cloud_database": false, 
     "max_monitor_messages": 20, // max number of monitor messages to keep in context
     "proxyserver_port": 8081,
     "monitor_model" : {
@@ -19,7 +19,7 @@ export const settings = {
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // survival.json, creative.json, god_mode.json
     "profiles": [
-        // "./lucy.json",
+        "./lucy.json",
         "./max.json",
         // if you are using more than 1 profile, then 
         // - you can use /msg or @botname in order to talk to each bot indivually

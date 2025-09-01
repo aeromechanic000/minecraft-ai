@@ -20,9 +20,26 @@ More detailed information can be found in [Minecraft AI Whitepapers and Technica
 
 ---
 
+## Tutorials 
+
+<table>
+<tr>
+<td><a href="https://www.youtube.com/watch?v=LauwH7enj5A" target="_blank"><img src="https://s2.loli.net/2025/09/01/u3LiqweSpaMX9Ky.png" alt="Get Started with Minecraft AI" width="250" height="150"></a></td>
+<td><a href="https://www.youtube.com/watch?v=lI5VubK_eHs" target="_blank"><img src="https://s2.loli.net/2025/09/01/V5hzKIsJN7FCDfp.png" alt="More Actions with Plugins" width="250" height="150"></a></td>
+<td><a href="https://www.youtube.com/watch?v=xGs_TPBtwKw" target="_blank"><img src="https://s2.loli.net/2025/09/01/DCmG89E4urYU57L.png" alt="Monitor & Cloud Knowledge" width="250" height="150"></a></td>
+</tr>
+</table>
+
+---
+
 ## Showcases 
 
 <table>
+<tr>
+<td><a href="https://www.youtube.com/watch?v=6o0S_hf7uh8" target="_blank"><img src="https://s2.loli.net/2025/09/01/RzP3TCAISHl54BQ.png" alt="Survive Togetherin Minecraft with AI Companions" width="250" height="150"></a></td>
+<td><a href="https://www.youtube.com/watch?v=RKJ3V1xiQGo" target="_blank"><img src="https://s2.loli.net/2025/09/01/4xYreNLyKO3VWoI.png" alt="Minecraft Characters with Topic-Fact Memory" width="250" height="150"></a></td>
+<td><a href="https://www.youtube.com/watch?v=ESXGo489c5s" target="_blank"><img src="https://s2.loli.net/2025/09/01/5w2BNSG6u9zoaDh.png" alt="Create Original Characters with Minecraft AI-Python" width="250" height="150"></a></td>
+</tr>
 <tr>
 <td><a href="https://www.youtube.com/watch?v=LauwH7enj5A" target="_blank"><img src="https://s2.loli.net/2025/05/05/tK8rigzhcU4d6jA.png" alt="How AI Characters Build Better in Minecraft" width="250" height="150"></a></td>
 <td><a href="https://www.youtube.com/watch?v=lI5VubK_eHs" target="_blank"><img src="https://s2.loli.net/2025/05/01/KcO4AXGhmwH7Z2v.png" alt="Minecraft Meets AI Dance Party" width="250" height="150"></a></td>
@@ -301,12 +318,9 @@ In some cases, especially on Windows or macOS, your file may be accidentally sav
 
 ---
 
-## Tutorials 
+## Documentations 
 
 Want to see how it all works? Check out the [Tutorials](https://github.com/aeromechanic000/minecraft-ai/tree/main/tutorials) for more detailed usage guides and examples.
-
-<!-- ## Documentation -->
-<!-- More detailed information of Minecraft AI can be found in the [Documentation](https://github.com/aeromechanic000/minecraft-ai/tree/main/doc). -->
 
 ---
 
@@ -342,12 +356,6 @@ Plugins are only loaded if their names are explicitly listed in the `settings.pl
     <td><img src="https://s2.loli.net/2025/04/20/wWpoAE9xe6rcQ7f.gif" alt="AIC build a igloo after self-driven thinking." width="380" height="220"></td>
 </tr>
 </table>
-
-#### Native Plugin List  
- TBA
-
-#### Third-Party Plugin List  
- TBA
 
 ### Multimodal Interaction
 
