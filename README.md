@@ -24,9 +24,9 @@ More detailed information can be found in [Minecraft AI Whitepapers and Technica
 
 <table>
 <tr>
-<td><a href="https://www.youtube.com/watch?v=LauwH7enj5A" target="_blank"><img src="https://s2.loli.net/2025/09/01/u3LiqweSpaMX9Ky.png" alt="Get Started with Minecraft AI" width="250" height="150"></a></td>
-<td><a href="https://www.youtube.com/watch?v=lI5VubK_eHs" target="_blank"><img src="https://s2.loli.net/2025/09/01/V5hzKIsJN7FCDfp.png" alt="More Actions with Plugins" width="250" height="150"></a></td>
-<td><a href="https://www.youtube.com/watch?v=xGs_TPBtwKw" target="_blank"><img src="https://s2.loli.net/2025/09/01/DCmG89E4urYU57L.png" alt="Monitor & Cloud Knowledge" width="250" height="150"></a></td>
+<td><a href="https://www.youtube.com/watch?v=c3687wMx5ek" target="_blank"><img src="https://s2.loli.net/2025/09/01/u3LiqweSpaMX9Ky.png" alt="Get Started with Minecraft AI" width="250" height="150"></a></td>
+<td><a href="ttps://www.youtube.com/watch?v=jzfPk23PE_o" target="_blank"><img src="https://s2.loli.net/2025/09/01/V5hzKIsJN7FCDfp.png" alt="More Actions with Plugins" width="250" height="150"></a></td>
+<td><a href="https://www.youtube.com/watch?v=8OrhXD2hjXA" target="_blank"><img src="https://s2.loli.net/2025/09/01/DCmG89E4urYU57L.png" alt="Monitor & Cloud Knowledge" width="250" height="150"></a></td>
 </tr>
 </table>
 

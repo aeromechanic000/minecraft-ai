@@ -19,7 +19,7 @@ export const settings = {
     // the base profile is shared by all bots for default prompts/examples/modes
     "base_profile": "./profiles/defaults/survival.json", // survival.json, creative.json, god_mode.json
     "profiles": [
-        "./lucy.json",
+        // "./lucy.json",
         "./max.json",
         // if you are using more than 1 profile, then 
         // - you can use /msg or @botname in order to talk to each bot indivually
