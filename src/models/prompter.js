@@ -432,6 +432,4 @@ export class Prompter {
         let res = await this.enhancer.sendRequest(this.chat_model, [], prompt);
         return res.trim().toLowerCase() === 'respond';
     }
-
-    
 }

@@ -1,9 +1,9 @@
 ._*
 .env
 .fslckout
-.DS_Store
 run.sh
 key.json
+data/
 skins/*
 bots/*/*
 gen_profiles/*
@@ -15,8 +15,6 @@ code_records/
 scratch.js
 bots/**/action-code/**
 bots/**/
-data/*
-keys.json
 services/viaproxy/jars/**
 services/viaproxy/logs/**
 services/viaproxy/plugins/**
