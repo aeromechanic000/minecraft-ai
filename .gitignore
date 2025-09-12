@@ -2,6 +2,7 @@
 .env
 .fslckout
 run.sh
+.DS_Store
 key.json
 data/
 skins/*
