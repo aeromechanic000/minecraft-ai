@@ -120,8 +120,8 @@ export class Agent {
         ];
         
         const respondAtFunc = async (username, message) => {
-            if (Object.keys(this.bot.players).length === 2 || message.startsWith("@all") || message.startsWith(`@${this.name}`)) {
-                this.respondFunc(username, message)
+            if (Object.keys(this.bot.players).length === 2 || settings.respond_to_all_messages === true || message.includes("@all") || message.includes(`@${this.name}`)) {
+                this.respondFunc(username, message);
             }
         }
 
@@ -136,13 +136,13 @@ export class Agent {
 
                 console.log(this.name, 'received message from', username, ':', message);
 
-                if (convoManager.isOtherAgent(username)) {
-                    console.warn('received whisper from other bot??')
-                }
-                else {
-                    let translation = await handleEnglishTranslation(message);
-                    this.handleMessage(username, translation);
-                }
+                // if (convoManager.isOtherAgent(username)) {
+                    // console.warn('received whisper from other bot??')
+                    // return;
+                // }
+
+                let translation = await handleEnglishTranslation(message);
+                this.handleMessage(username, translation);
             } catch (error) {
                 console.error('Error handling message:', error);
             }

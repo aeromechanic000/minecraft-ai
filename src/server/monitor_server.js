@@ -803,6 +803,8 @@ export function createMonitorServer(port = 8080) {
             }
             
             socket.emit('register-agents-success');
+
+            updateAgentDatabase();
         });
 
         socket.on('login-agent', (agentName, count_id) => {
@@ -814,6 +816,7 @@ export function createMonitorServer(port = 8080) {
             if (registeredAgents.has(agentName)) {
                 agentSockets[agentName] = socket;
                 // Update agent status in database
+                updateAgentDatabase();
                 const agent = agentDatabase[agentName];
                 if (agent) {
                     agent.id = count_id;
@@ -952,8 +955,18 @@ async function updateAgentData(agentName) {
 }
 
 function updateAgentDatabase() {
+    const agents = [];
     registeredAgents.forEach(name => {
         updateAgentData(name);
+        const agent = agentDatabase[name];
+        if (agent) {
+            agents.push({name, in_game: agent.status === "online"});
+        }
+    })
+    registeredAgents.forEach(name => {
+        if (agentSockets[name]) {
+            agentSockets[name].emit('agents-update', agents);
+        }
     })
 }
 

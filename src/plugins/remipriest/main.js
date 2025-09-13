@@ -81,7 +81,6 @@ export class PluginInstance {
                     `;
                     let [content, data] = await agent.plugin.plugins["remipriest"].callPrompter(prompt,true);
                     
-                    console.log("***", data);
                     const steps = JSON.parse(data);
                     // const steps = [;;
                     // {"name":"foward","duration":1000},

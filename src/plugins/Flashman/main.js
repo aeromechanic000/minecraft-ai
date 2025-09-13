@@ -77,7 +77,6 @@ export class PluginInstance {
                         `
                                                         
                     let [content, data] = await agent.plugin.plugins["Flashman"].callPrompter(prompt);
-                    console.log("***", data)
                     const steps = JSON.parse(data)
                     
                  

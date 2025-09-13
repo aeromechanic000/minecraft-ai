@@ -131,7 +131,7 @@ class ConversationManager {
         convo.active = true;
         this.activeConversation = convo;
         this._startMonitor();
-        this.sendToBot(send_to, message, true, false);
+        this.sendToBot(send_to, `@${send_to}` + message, true, false);
     }
 
     startConversationFromOtherBot(name) {

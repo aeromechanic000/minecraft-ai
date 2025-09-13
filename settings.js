@@ -9,6 +9,7 @@ export const settings = {
     "monitor_server_host": "localhost",
     "monitor_server_port": 8080,
     "load_cloud_database": false, 
+    "respond_to_all_messages" : false,
     "max_monitor_messages": 20, // max number of monitor messages to keep in context
     "proxyserver_port": 8081,
     "monitor_model" : {
@@ -17,7 +18,7 @@ export const settings = {
     },
     
     // the base profile is shared by all bots for default prompts/examples/modes
-    "base_profile": "./profiles/defaults/survival.json", // survival.json, creative.json, god_mode.json
+    "base_profile": "./profiles/defaults/creative.json", // survival.json, creative.json, god_mode.json
     "profiles": [
         // "./lucy.json",
         "./max.json",
