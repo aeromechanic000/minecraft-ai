@@ -1,5 +1,6 @@
 import { getBlockId, getItemId } from "../../utils/mcdata.js";
 import { actionsList } from './actions.js';
+import settings from '../../../settings.js';
 import { queryList } from './queries.js';
 
 let suppressNoDomainWarning = false;
@@ -250,6 +251,9 @@ export function getCommandDocs() {
     Use the commands with the syntax: !commandName or !commandName("arg1", 1.2, ...) if the command takes arguments.\n
     Do not use codeblocks. Use double quotes for strings. Only use one command in each response, trailing commands and comments will be ignored.\n`;
     for (let command of commandList) {
+        if (command == "!newAction" && !settings.allow_insecure_coding) {
+            continue
+        }
         docs += command.name + ': ' + command.description + '\n';
         if (command.params) {
             docs += 'Params:\n';
@@ -257,6 +261,9 @@ export function getCommandDocs() {
                 docs += `${param}: (${typeTranslations[command.params[param].type]??command.params[param].type}) ${command.params[param].description}\n`;
             }
         }
+    }
+    if (!settings.allow_insecure_coding) {
+        docs += '\n*NOTE THAT*: As the allow_insecure_coding is set "false" by the user. The command !newAction CANNOT be used.\n';
     }
     return docs + '*\n';
 }
