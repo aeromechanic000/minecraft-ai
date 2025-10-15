@@ -44,7 +44,7 @@ export const settings = {
     "narrate_behavior": true, // chat simple automatic actions ('Picking up item!')
     "chat_bot_messages": true, // publicly chat messages to other bots
     "stt_service_provider": "bytedance", // "openai" or "bytedance"
-    "plugins" : ["Dance", "AdvancementReport"], // plugin will be loaded if and only if it's name appears here
+    "plugins" : ["Dance"], // plugin will be loaded if and only if it's name appears here
 }
 
 // these environment variables override certain settings
