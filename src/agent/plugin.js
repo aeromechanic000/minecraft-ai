@@ -22,6 +22,7 @@ export class PluginManager {
                     }
                 }
                 console.log("Loaded plugins:", Object.keys(this.plugins).filter(key => this.plugins[key] !== null));
+                console.log("Message handlers:", this.agent.messageHandlers);
             })
             .catch((error) => {
                 console.error("Error importing plugins:", error);

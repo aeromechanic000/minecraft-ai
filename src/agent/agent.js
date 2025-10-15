@@ -25,6 +25,8 @@ export class Agent {
         
         console.log('Starting agent initialization with profile:', profile_fp);
         
+        this.messageHandlers = [];
+
         // Initialize components with more detailed error handling
         console.log('Initializing action manager...');
         this.actions = new ActionManager(this);
@@ -50,6 +52,7 @@ export class Agent {
 
         console.log(this.name, 'logging into minecraft...');
         this.bot = initBot(this.name);
+
 
         initModes(this);
 
@@ -142,7 +145,7 @@ export class Agent {
                 // }
 
                 let translation = await handleEnglishTranslation(message);
-                this.handleMessage(username, translation);
+                this.handleMessageInChain(username, translation);
             } catch (error) {
                 console.error('Error handling message:', error);
             }
@@ -206,11 +209,23 @@ export class Agent {
         convoManager.endAllConversations();
     }
 
+    async handleMessageInChain(source, message) {
+        let src = source
+        let msg = message 
+        for (let handler of this.messageHandlers) {
+            [src, msg] = await handler(src, msg);
+            console.log("After handler:", src, msg);
+        }
+        this.handleMessage(src, msg);
+    }
+
     async handleMessage(source, message, max_responses=null) {
         if (!source || !message) {
             console.warn('Received empty message from', source);
             return false;
         }
+        
+        console.log(`Handle message from '${source}': ${message}`);
 
         let used_command = false;
         if (max_responses === null) {
