@@ -355,7 +355,7 @@ Plugins are only loaded if their names are explicitly listed in the `settings.pl
 
 <table>
 <tr>
-    <td><img src="https://s2.loli.net/2025/10/15/OZpEYmBNr9nslAe.gif" alt="AIC dance with the example Dance plugin." width="380" height="220"></td>
+    <td><img src="https://s2.loli.net/2025/05/01/BNLAIKhpsiC5naU.gif" alt="AIC dance with the example Dance plugin." width="380" height="220"></td>
     <td><img src="https://s2.loli.net/2025/04/20/wWpoAE9xe6rcQ7f.gif" alt="AIC build a igloo after self-driven thinking." width="380" height="220"></td>
 </tr>
 </table>
@@ -381,7 +381,7 @@ In Mindcraft, you can launch the `mindserver` backend as a communication hub tha
 
 <table>
 <tr>
-    <td><img src="https://s2.loli.net/2025/10/15/owzxq6fYyIsU7au.gif" alt="Talk to bot." width="400" height="220"></td>
+    <td><img src="https://s2.loli.net/2025/10/15/OZpEYmBNr9nslAe.gif" alt="Talk to bot." width="400" height="220"></td>
     <td><img src="https://s2.loli.net/2025/10/15/NDX9zVZbdgk3CLI.gif" alt="Talk to bot." width="400" height="220"></td>
 </tr>
 </table>
