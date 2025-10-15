@@ -4,6 +4,8 @@ Minecraft AI explores how AI Characters (AICs) can become creative, expressive, 
 
 **The Embodied Turing Test** rather than asking "Can machines think?", Minecraft AI invites a new question for the generative AI era: Can machines play with us? Through open-ended interaction, emergent behaviors, and shared creativity, we explore whether AI can truly engage as a companion—not just in conversation, but in fun, imagination, and collaborative world-building.
 
+> The [Minecraft Emobodied Levels](https://minecraft-embodied-levels.megrez.plus/) Benchmark is a hierarchical evaluation framework designed to measure the embodied intelligence of AI agents in Minecraft. It organizes all in-game advancements into progressive levels, allowing researchers and developers to assess an agent’s cognitive and interactive abilities — from basic survival skills to complex multi-step planning and collaboration. Each level represents a milestone in autonomy, perception, and reasoning within a persistent, open-ended environment, providing a structured path for developing and comparing Minecraft-based AI systems.
+
 **Minecraft AI** is a project derived from [MINDcraft](https://github.com/kolbytn/mindcraft), building upon the foundational ideas of [Generative Agents](https://github.com/joonspk-research/generative_agents)—including autonomous planning, self-reflection, self-motivated behavior, and long-term goal pursuit—within an interactive Minecraft environment. Instead of creating a new memory system from scratch, the project refactors and extends Mindcraft’s original memory infrastructure, introducing dynamic agent profiles, daily self-generated task lists, and reflective behavior cycles. These enhancements allow agents to interact, plan, and adapt over time based on their experiences and identity, resulting in a lightweight yet compelling simulation of human-like cognition and social dynamics.
 
 🐲 For those who are interested in building Minecraft AICs with Python, check out [Minecraft AI-Python](https://github.com/aeromechanic000/minecraft-ai-python).
@@ -327,7 +329,8 @@ Want to see how it all works? Check out the [Tutorials](https://github.com/aerom
 ## Notable Features
 
 - [Extension with Plugins](#extension-with-plugins) 
-- [Multimodal Interaction](#multimodal-interaction)
+- [Configurable Message Handlers](#configurable-message-handlers) 
+- [WebUI for Monitoring The AI Characters](#webui-for-monitoring-the-ai-characters)
 - [Memory Module](#memory-module)
 
 ### Support for Plugins
@@ -357,32 +360,48 @@ Plugins are only loaded if their names are explicitly listed in the `settings.pl
 </tr>
 </table>
 
-### Multimodal Interaction
+### Configurable Message Handlers 
 
-#### Talk to The AI Character (Bot)
+#### Handle Message in Chain 
+The `messageHandlers` mechanism introduces a flexible middleware-style message processing pipeline in MCAI.
+Instead of handling messages directly, all incoming messages now pass through a chain of handlers, allowing plugins to intercept, analyze, or modify both the message source and content before the core logic executes.
 
-In Mindcraft, you can manage the bots through a page hosted at `localhost:8080` (by default). We have added a Speech-to-Text (STT) function to this page. By clicking the "Start Detecting" button, the front-end will request access to your microphone and continuously detect voice input. When voice is detected, it starts recording and stops when there is no voice for 3 seconds. You can also manually stop the recording and detection by clicking the "Stop Detecting" button.
+At the core of this system is the `handleMessageInChain` function and each handler in this.messageHandlers acts like a transformation layer — it receives (source, message), performs any desired processing, and returns the (potentially modified) pair for the next handler.
+
+In the plugin `MessageHandler`, it demostrated a typical plugin which registers its custom handler in the init() method, and process the message before it goes to the `handleMessage` method in `agent.js`.
+
+#### Share Knowledge via Internal Chat
+To support **internal communication** between AI characters (AICs) without interfering with their regular behavior logic, MCAI introduces a special tagging mechanism: When an agent sends a message using `agent.bot.chat()` or `agent.bot.whisper()`, and the message **includes the tag `[[INTERNAL_MESSAGE]]`**, the message is **excluded from the standard `handleMessage()` processing pipeline**. This ensures that internal messages do not trigger unintended actions or responses defined in `handleMessage()`.
+
+Instead, other listeners subscribed to the `chat` or `whisper` events can independently process such internal messages, enabling custom coordination logic or inter-agent communication protocols—**without conflicting with the primary message → action mechanism**.
+
+### WebUI for Monitoring The AI Characters
+
+In Mindcraft, you can launch the `mindserver` backend as a communication hub that connects AI characters and allows you to send messages through a web interface hosted at `localhost:8080` by default. We’ve retained this useful architecture and enhanced it into a monitoring platform that supports issuing commands to AI characters and managing their behavior through an LLM-driven agent. Additionally, integrated cloud storage enables seamless information sharing among AI characters, making collaboration and coordination much easier.
+
+<table>
+<tr>
+    <td><img src="https://s2.loli.net/2025/10/15/owzxq6fYyIsU7au.gif" alt="Talk to bot." width="400" height="220"></td>
+    <td><img src="https://s2.loli.net/2025/10/15/NDX9zVZbdgk3CLI.gif" alt="Talk to bot." width="400" height="220"></td>
+</tr>
+</table>
+
+#### Multimodal Interaction
+
+**Talk to The AI Character (Bot).** We have added a Speech-to-Text (STT) function. By clicking the "Start Detecting" button, the front-end will request access to your microphone and continuously detect voice input. When voice is detected, it starts recording and stops when there is no voice for 3 seconds. You can also manually stop the recording and detection by clicking the "Stop Detecting" button.
 
 The recorded voice is converted into text via the STT API. If the resulting text starts with the name of a specific bot, the text will be sent to that bot as a whisper message. Otherwise, an "@all" label will be automatically added, ensuring that the message is received by all bots.
 
-🪪 **Currently, the STT function is only available with [ByteDance's STT API](https://www.volcengine.com/docs/6561/163043). Therefore, you need to apply for access rights on ByteDance's website, enable the STT service, obtain the appropriate app ID and access token, and fill them in the `key.json` file:**
+🪪 Currently, the STT function is only available with [ByteDance's STT API](https://www.volcengine.com/docs/6561/163043). Therefore, you need to apply for access rights on ByteDance's website, enable the STT service, obtain the appropriate app ID and access token, and fill them in the `key.json` file:
 
 ```json
 "BYTEDANCE_APP_ID": "[app ID]",
 "BYTEDANCE_APP_TOKEN": "[access token]"
 ```
 
-<table>
-<tr>
-    <td><img src="https://s2.loli.net/2025/04/18/FVON4CPf3DTSpQ8.gif" alt="Talk to bot." width="400" height="220"></td>
-</tr>
-</table>
+**Bot Speak.** In Minecraft AI, the speak function is implemented as a plugin. Therefore, to enable the speak function, you need to include "Speak" in the `plugins` of `settings.json` file. Futhermore, you have to set field "speak" to "true" in the bot's profile. It uses the native text-to-speech (TTS) tools of your system. We have added an additional option to perform TTS via an API.
 
-#### Bot Speak
-
-In Minecraft AI, the speak function is implemented as a plugin. Therefore, to enable the speak function, you need to include "Speak" in the `plugins` of `settings.json` file. Futhermore, you have to set field "speak" to "true" in the bot's profile. It uses the native text-to-speech (TTS) tools of your system. We have added an additional option to perform TTS via an API.
-
-🪪 **Currently, the TTS via API function is only available with [ByteDance's TTS API](https://www.volcengine.com/docs/6561/79820). Therefore, you need to apply for access rights on ByteDance's website, enable the TTS service, obtain the appropriate app ID and access token, and fill them in the `key.json` file:**
+🪪 Currently, the TTS via API function is only available with [ByteDance's TTS API](https://www.volcengine.com/docs/6561/79820). Therefore, you need to apply for access rights on ByteDance's website, enable the TTS service, obtain the appropriate app ID and access token, and fill them in the `key.json` file:
 
 ```json
 "BYTEDANCE_APP_ID": "[app ID]",
@@ -402,6 +421,26 @@ To use the TTS via API function, you need to set "speak" to `true` in the `setti
     "tts_voice_type": "BV002_streaming"
 }
 ```
+
+#### Cloud Storage
+
+When an AIC needs to share information with other AICs, the recommended mechanism is to use the monitor server's built-in "cloud storage" system—a centralized data space accessible to all agents via HTTP APIs. This cloud storage system is organized as a collection of tables, each of which can be of type:
+
+- `list`: stores records as items in a JavaScript array.
+- `dict`: stores key-value pairs where values must be strings.
+
+If an AI character wants to save structured data (e.g., a JSON object) to a dict table, it must first stringify the content before uploading. The cloud storage API (accessed via `localhost:8081` by default) supports standard operations such as:
+
+- List all cloud tables (`GET /api/cloud/tables`): retrieve a list of all existing cloud tables along with their metadata.
+- Create a new table (`POST /api/cloud/tables`): create a new table by specifying its name, type (list or dict), and optional description or initial data.
+- Retrieve table metadata (`GET /api/cloud/tables/:tableName`): get detailed metadata (type, size, timestamps) for a specific table.
+- Fetch table data (`GET /api/cloud/tables/:tableName/data`): retrieve the full contents of a list or dict table.
+- Add new data to a table (`POST /api/cloud/tables/:tableName/data`): append new data to a list table or insert a key-value pair into a dict table.
+- Update existing table data (`PUT /api/cloud/tables/:tableName/data`): Modify a value at a specific index (for list) or key (for dict) within a table.
+
+The plugin `CloudKnowledge` provides a working example of how agents can use this cloud storage system to save or query shared knowledge in a collaborative setting.
+
+Alternatively, as for all the applications with multi-processes, the AICs can share information by writting and reading data from a common file stored in an accessible location. This strategy is still useful as when the monitor server is not started (i.e. `settings.host_monitor_server` is set false),  the functions that depends on the shared information can still work. The plugin LocalData provides an example of how agents can use this local file to save or query shared information.
 
 ### Memory Module
 
