@@ -335,6 +335,18 @@ export const actionsList = [
         })
     },
     {
+        name: '!activateEntity',
+        description: 'Activate the nth index nearest entity of a given type while holding a certain item.',
+        params: {
+            'type': { type: 'string', description: 'The type of entity to activate.' },
+            'index': { type: 'int', description: 'The index of the entity to activate (0 is nearest, 1 is second nearest, etc.). Default is 0.', domain: [0, 10] },
+            'item_name': { type: 'string', description: 'The name of the item to equip before activating. Use "none" to not equip anything.' }
+        },
+        perform: runAsAction(async (agent, type, index = 0, item_name = null) => {
+            await skills.activateNearestEntity(agent.bot, type, index, item_name);
+        })
+    },
+    {
         name: '!stay',
         description: 'Stay in the current location no matter what. Pauses all modes.',
         params: {'type': { type: 'int', description: 'The number of seconds to stay. -1 for forever.', domain: [-1, Number.MAX_SAFE_INTEGER] }},

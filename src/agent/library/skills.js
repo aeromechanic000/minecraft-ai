@@ -1429,6 +1429,52 @@ export async function activateNearestBlock(bot, type) {
     return true;
 }
 
+export async function activateNearestEntity(bot, entityType, index = 0, item_name = null) {
+    /**
+     * Activate the nth index nearest entity of a given type while holding a certain item.
+     * @param {MinecraftBot} bot, reference to the minecraft bot.
+     * @param {string} entityType, the type of entity to activate.
+     * @param {number} index, the index of the entity to activate (0 is nearest, 1 is second nearest, etc.).
+     * @param {string} item_name, the name of the item to equip before activating.
+     * @returns {Promise<boolean>} true if the entity was activated, false otherwise.
+     * @example
+     * await skills.activateNearestEntity(bot, "minecart", 1, "none");
+     * await skills.activateNearestEntity(bot, "cow", 0, "wheat");
+     * **/
+    let entities = world.getNearbyEntities(bot, 16);
+    let targetEntity = null;
+    let count = 0;
+
+    for (const entity of entities) {
+        if (entity.name === entityType) {
+            if (count === index) {
+                targetEntity = entity;
+                break;
+            }
+            count++;
+        }
+    }
+
+    if (!targetEntity) {
+        log(bot, `Could not find ${entityType} at index ${index} to activate.`);
+        return false;
+    }
+
+    if (bot.entity.position.distanceTo(targetEntity.position) > 4.5) {
+        let pos = targetEntity.position;
+        bot.pathfinder.setMovements(new pf.Movements(bot));
+        await bot.pathfinder.goto(new pf.goals.GoalNear(pos.x, pos.y, pos.z, 4));
+    }
+
+    if (item_name && item_name !== 'none' && item_name !== 'null') {
+        await equip(bot, item_name);
+    }
+
+    await bot.activateEntity(targetEntity);
+    log(bot, `Activated ${entityType} (index ${index}) at x:${targetEntity.position.x.toFixed(1)}, y:${targetEntity.position.y.toFixed(1)}, z:${targetEntity.position.z.toFixed(1)}.`);
+    return true;
+}
+
 export async function digDown(bot, distance = 10) {
     /**
      * Digs down a specified distance. Will stop if it reaches lava, water, or a fall of >=4 blocks below the bot.
